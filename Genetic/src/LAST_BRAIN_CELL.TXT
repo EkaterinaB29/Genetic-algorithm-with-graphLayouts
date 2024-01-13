@@ -1,0 +1,149 @@
+
+
+    Minimization of Edge Crossings:
+
+    to minimize edge crossings,
+    consider setting the optimal edge length
+    to a value that discourages edges from overlapping.
+    A *shorter* optimal edge length can help achieve this goal.
+
+   Aesthetic Considerations:
+    For aesthetic considerations,
+   the optimal edge length to be proportional
+   to the size or density of the graph. Larger graphs might
+   benefit from longer edge lengths to avoid clutter,
+   while smaller graphs could have shorter optimal
+   edge lengths for a denser appearance.
+
+
+    standard formula to calculate the maximum number of edges in a simple undirected graph:
+      density = v*(v-1) /2
+
+
+
+
+     public double minimumNodeDistance(Graph graph) {
+            double minNodeD = Double.MAX_VALUE;
+            for (Node node : graph.getNodes()) {
+
+                //did it with collections so
+                //forget this uneffiecient
+                if (minNodeD > node.minimumDistanceNeighbour(graph)) {
+                    minNodeD = node.minimumDistanceNeighbour(graph);
+                }
+                // System.out.println(minNodeD);
+    //;
+
+            }
+            return Math.pow(minNodeD, 2.0) * numNodes;
+        }
+       //////////////////// maybe important for later /////////////////////////
+       ask about this one, when do we use API streaming?
+
+       AtomicReference<Double> sum= new AtomicReference<>((double) 0);
+               lengths.forEach(element -> {
+                   double d= element-optimalEdgeLength2;
+                   sum.updateAndGet(v -> (double) (v + d));
+                   System.out.print(sum.get());
+
+               });
+       ///////////////////////////////////////////////////////
+
+
+
+                //////////////////////////////////INTERSECTION BETWEEN TWO LINES//////////////////////////////
+
+                //CANNOT USE THIS SINCE IT WILL COUNt THE INTERSECTION OF LINES=EDGES INSIDE THE NODE
+                YOU DON'T NEED THEM EX NODE:5 EDGES:8 CROSSEDGES:32 OR 36
+  int  edgeCross=0;
+                          int i =0;
+                          while( i < graph.getEdges().size())
+                          {
+                              //first edge
+                              double x1=graph.getEdges().get(i)[0].x;
+                              double y1=graph.getEdges().get(i)[0].y;
+                              double x2=graph.getEdges().get(i)[1].x;
+                              double y2=graph.getEdges().get(i)[1].y;
+                              int j=i+1;
+                              while(j <graph.getEdges().size())
+                              {
+                                  double x3=graph.getEdges().get(j)[0].x;
+                                  double y3=graph.getEdges().get(j)[0].y;
+                                  double x4=graph.getEdges().get(j)[1].x;
+                                  double y4=graph.getEdges().get(j)[1].y;
+
+                                  double Px = ((x1*y2 - y1*x2)*(x3-x4) -(x1-x2)*(x3*y4 - y3*x4))/(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+                                  double Py= ((x1*y2 - y1*x2)*(y3-y4) - (y1 - y2)*(x3*y4 - y3*y4))/((x1-x2)*(y3-y4) - (y1-y2)*(x3-x4));
+
+                                  if(Px != 0 && Py != 0)
+                                  {
+                                      //if determinants are not zero (since div by zero->0)
+                                      edgeCross++;
+                                  }
+                                  j++;
+
+                              }
+                              i++;
+                          }
+                          System.out.println(edgeCross);
+                          return edgeCross;
+
+Termination
+This generational process is repeated until a termination condition has been reached. Common terminating conditions are:
+
+A solution is found that satisfies minimum criteria
+Fixed number of generations reached
+Allocated budget (computation time/money) reached
+The highest ranking solution's fitness is reaching or has reached a plateau such that successive iterations no longer produce better results
+Manual inspection
+Combinations of the above
+/////////////////////////////////////////
+As a general rule, population size depends on number of genes. So for 9 genes need 16 chromosomes,
+16 genes need 32 chromosomes. I normally start off by choosing population size 1.5-2
+times number of genes, to a maximum population size of 100.
+Values of crossover and mutation probabilities depend on problem concerned
+
+
+*********************************
+choose k (the tournament size) individuals from the population at random
+choose the best individual from the tournament with probability p
+choose the second best individual with probability p*(1-p)
+choose the third best individual with probability p*((1-p)^2)
+and so on
+: it is efficient to code, works on parallel architectures and
+allows the selection pressure to be easily adjusted.[1] Tournament
+selection has also been shown to be independent of the scaling of the genetic algorithm fitness function
+
+
+    public ArrayList<double[]> fitnessScoreEvaluate(Collection<Graph> population) {
+        ArrayList<Double> fitness_values = new ArrayList<>(); // here locally or better to be declared in the global scope?
+        ArrayList<double[]> rank_values = new ArrayList<>(); //pairs of the rank and the normalized value
+        // iterate  the population
+        for (Graph graph : population) {
+            fitness_values.add(graph.fitnessScore); // add the scores into arraylist
+        }
+        Collections.sort(fitness_values,Collections.reverseOrder()); //sort in dsc
+        //or Collections.reverse(fitness_values);
+
+        for (Graph graph : population) {
+            double normalizedValue = linearNormalize(graph.fitnessScore,fitness_values);
+            graph.setRank( constantValue,normalizedValue); //TODO IS THIS CORRECT OR?
+            //IT SAYS THE BEST CHROMOSOME GETS A CONSTANT
+            constantValue-=2;
+            rank_values.add(graph.getRank());
+
+        }
+        return fitness_values;  //confused here what should I store the rank or the value?
+        //Chromosomes are then selected
+        //to the genetic operations proportionally to the values so obtained.
+    }
+   public  int constantValue = 100;
+
+    //linear Scaling. x ′ = ( x − x m i n ) / ( x m a x − x m i n ).
+    private double linearNormalize(double fitnessScore, ArrayList<Double> sortedFitnessValues) {
+        //linear normalization formula
+        double minValue = sortedFitnessValues.get(sortedFitnessValues.size() - 1);
+        double maxValue = sortedFitnessValues.get(0);
+        double normalizedValue = ((fitnessScore - minValue)) / (maxValue - minValue);  //like this?
+        return normalizedValue;
+    }
