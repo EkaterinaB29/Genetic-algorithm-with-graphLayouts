@@ -15,7 +15,7 @@ class Graph extends JPanel {
     public int w;
     public double[] rank;
 
-    static Random random = new Random(); // static, so the same one is used by all instantiated graphs.
+    static Random random = new Random();
 
     // constructor
     public Graph(int m, int n, int h, int w) {
@@ -27,16 +27,15 @@ class Graph extends JPanel {
         this.h = h;
         this.w = w;
         //maybe will be needed
-        this.rank = new double[]{0, 0};
+        //this.rank = new double[]{0, 0};
 
         addNodes();
         addEdges();
-        minimumDistanceNeighbour(this);
-        this.fitnessScore = fitnessEvaluation(this);
+       //minimumDistanceNeighbour();
+        this.fitnessScore = fitnessEvaluation();
 
 
     }
-
     //another constructor so it will know which one to use
     //used in the generation of the new population
     public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w)
@@ -45,26 +44,20 @@ class Graph extends JPanel {
         this.edges= edges;
         this.numNodes = nodes.size();
         this.numEdges = edges.size();
+        this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        this.rank = new double[]{0, 0};
+        //this.rank = new double[]{0, 0};
         //here I don't
-        minimumDistanceNeighbour(this); // ???calculates the lenghts so
+       // minimumDistanceNeighbour(this); // ???calculates the lenghts so
         // I need to call it here?
-        this.fitnessScore = fitnessEvaluation(this);
+        this.fitnessScore = fitnessEvaluation();
 
     }
-
-
-    public void setRank(double rank, double value) {
-        this.rank[0] =rank;
-        this.rank[1] =value;
+    public double getFitnessScore()
+    {
+        return fitnessScore;
     }
-
-    public double[] getRank() {
-        return rank;
-    }
-
     public ArrayList<Double> getLengths() {
         return lengths;}
     public ArrayList<Node[]> getEdges() {
@@ -82,15 +75,28 @@ class Graph extends JPanel {
     }
 
     // method to add nodes
+
     public void addNodes() {
 
         while (getNodes().size() < numNodes) {
             double x = random.nextInt(w); //bound so it is visible
             double y = random.nextInt(h);
             Node node = new Node(x, y);
-            nodes.add(node);
+            boolean flag = false;
+            for (Node n:getNodes()) {
+                // if coordinates have  already been assigned
+                if(n.x == x && n.y == y){
+                    flag = true;
+                    break;
+                }
+            }
+            // If coordinates don't exist, add the node
+            if (!flag) {
+                getNodes().add(node);
+            }
         }
     }
+
 
     //
     public void addEdges() {
@@ -117,7 +123,6 @@ class Graph extends JPanel {
 
     public boolean containsEdge(Node[] edge) {
         for (Node[] existingEdge : edges) {
-
             if ((existingEdge[0] == edge[0] && existingEdge[1] == edge[1]) ||
                     (existingEdge[0] == edge[1] && existingEdge[1] == edge[0])) {
                 return true;
@@ -146,16 +151,20 @@ class Graph extends JPanel {
             return getNodes().get(0); //
         }
     }
-    public double minimumDistanceNeighbour(Graph graph) {
+    public double minimumDistanceNeighbour(Node startNode ) {
 
-        double minDistance;
+        double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < this.getEdges().size(); i++) {
-            Node initialNode = graph.getEdges().get(i)[0];
-            Node targetNode = graph.getEdges().get(i)[1];
-            double edgeLength= Node.euclideanDistance(initialNode,targetNode);
-            getLengths().add(edgeLength); // add the length of the newly created edge
+            Node initialNode = this.getEdges().get(i)[0];
+            Node targetNode = this.getEdges().get(i)[1];
+            if (startNode == initialNode || startNode == targetNode) {
+                double edgeLength = Node.euclideanDistance(initialNode, targetNode);
+                getLengths().add(edgeLength); // add the length of the newly created edge
+            }
         }
-        minDistance= Collections.min(getLengths());
+        if (!getLengths().isEmpty()) {
+            minDistance = Collections.min(getLengths());
+        }
         return minDistance;
     }
 
@@ -167,8 +176,8 @@ class Graph extends JPanel {
     /* do it like this or with the collection*/
     public double minimumNodeDistanceSum(Graph graph) {
         double sum = 0;
-        for (Node node : graph.getNodes()) {
-            sum += minimumDistanceNeighbour(graph); // do I send this or graph? And how to know which one?
+        for (Node node : this.getNodes()) {
+            sum += minimumDistanceNeighbour(node); // do I send this or graph? And how to know which one?
             //System.out.println(sum);
         }
         return sum;
@@ -179,8 +188,13 @@ class Graph extends JPanel {
      * Minimum Node Distance = (Number of Nodes × (Minimum Node Distance)^2)
      *
      */
-    public double minimumNodeDistance(Graph graph) {
-        double minNodeD =Collections.min(lengths);
+
+    //I think I don't need this one anymore
+    public double minimumNodeDistance() {
+        double minNodeD = Double.MAX_VALUE;
+        if (!getLengths().isEmpty()) {
+            minNodeD = Collections.min(lengths);
+        }
         return minNodeD;
     }
 
@@ -227,25 +241,51 @@ class Graph extends JPanel {
     }
 
     //  fintness evaluation
-    public double fitnessEvaluation(Graph graph)
+    public double fitnessEvaluation()
     {
-        double fitness_score= 2 * minimumNodeDistanceSum(this)
+
+
+        double minNodeDist = minimumNodeDistanceSum(this); // It should never return 0.
+        double minNodeDist2 = Math.pow(minNodeDist, 2.0);
+        double edgeLenDev = edgeLengthDeviation(this);
+        double edgeCross = edgeCrossings();
+
+
+        System.out.println(minNodeDist);
+        System.out.println(minNodeDist2);
+        System.out.println(edgeLenDev);
+        System.out.println(edgeCross);
+        //System.out.println(wnd2);
+
+
+
+     double fitness_score= 2 * minimumNodeDistanceSum(this)
                 - 2 * edgeLengthDeviation(this)
-                -2.5*(edgeLengthDeviation(this)/minimumNodeDistance(this)
-                -0.25*(Math.pow(minimumNodeDistance(this), 2.0) * numNodes)
-                -(edgeCrossings()*Math.pow(getW()*getH(),2))); //increase penalty for crosses
+                -2.5*(edgeLengthDeviation(this)/minimumNodeDistance()
+                -0.25*(Math.pow(minimumNodeDistance(), 2.0) * numNodes)
+                -(edgeCrossings())); //increase penalty for crosses
         ;
 
         return fitness_score;
     }
 
     //mutation on a single Node
+
     public Graph mutation() {
 
         Node random_node = this.getRandomNode();
-        Node.moveNode(random_node, this.getW(),this.getH());
-        //Here should the length of the edge ( the old one) be preserved
-        //how can I do it?
+        for ( Node[] n : edges) {
+            double angle=random.nextDouble(360);
+            if(n[0] == random_node || random_node == n[1])
+            {
+                //get the pair [random_node, some other_node]
+                double radius = Node.euclideanDistance(n[0],n[1]);
+                double newX = (radius * Math.cos( angle * Math.PI / 180)) + (random_node.x);
+                double newY = (radius * Math.sin(angle* Math.PI / 180)) + (random_node.y);
+                Node.moveNode(random_node, newX,newY);
+            }
+
+        }
 
         return this;
     }

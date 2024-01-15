@@ -17,20 +17,14 @@ public class Computation {
     }
     public void compute()
     {
-        while(iterations !=0)
+        do
         {
 
-            GraphPopulation newGeneration = population.selection();
-
-            while (newGeneration.populationSize < population.populationSize/10 ) {
-
+                GraphPopulation newGeneration = population.selection();
                 //we need to combine and add
                 newGeneration.addNewGraph(newGeneration.combine());
                 newGeneration.mutation();
 
-
-            }
-            iterations--;
             //need to represent each generation's best sollution based on fitness
             Graph best = newGeneration.getGraph(max(newGeneration.fitness_values));
             GraphPanel graphPanel = new GraphPanel(best);
@@ -39,8 +33,8 @@ public class Computation {
             frame.add(graphPanel);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
-
-        }
+            iterations--;
+        }while(iterations>0);
 
     }
 }

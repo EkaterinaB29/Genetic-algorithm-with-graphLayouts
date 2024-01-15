@@ -30,6 +30,10 @@ class GraphPanel extends JPanel {
             g.fillOval((int) node.getX()-5, (int) node.getY()-5, 15, 15);
         }
 
+        g.setColor(Color.BLACK);
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+        g.drawString("Fitness score:" + Double.toString(graph.fitnessScore), 10, 20);
+
     }
 
 

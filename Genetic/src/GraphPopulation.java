@@ -10,10 +10,10 @@ public class GraphPopulation {
 
     ArrayList<Graph> population = new ArrayList<>();
     ArrayList<Double> fitness_values;
-    ArrayList<Integer> constantValues = new ArrayList<>();
+
     public Graph initialGraph;
     public GraphPanel panel;
-    public int bound = 1000;
+
     public int populationSize;
 
 
@@ -22,6 +22,13 @@ public class GraphPopulation {
         this.populationSize = populationSize;
          initialGraphPopulation(initialGraph);
          fitnessScoreEvaluate(population);
+
+    }
+    public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel)
+    {
+        this.populationSize = populationSize;
+        this.population = selectedIndividuals;
+        fitnessScoreEvaluate(population); //
 
     }
 
@@ -43,54 +50,38 @@ public class GraphPopulation {
 
     }
 
-    public ArrayList<double[]> fitnessScoreEvaluate(Collection<Graph> population) {
+    public ArrayList<Double> fitnessScoreEvaluate(Collection<Graph> population) {
 
         fitness_values = new ArrayList<>();
-        ArrayList<double[]> rank_values = new ArrayList<>(); //pairs of the rank and the fitness score
-        // iterate trough the population
+
         for (Graph graph : population) {
             fitness_values.add(graph.fitnessScore); // add the scores into arraylist
         }
         Collections.sort(fitness_values,Collections.reverseOrder()); //sort in dsc
 
 
-        for (Graph graph : population) {
-           // double normalizedValue = linearNormalize(graph.fitnessScore,fitness_values);
-            graph.setRank( constantValue,graph.fitnessScore); //
-            //IT SAYS THE BEST CHROMOSOME GETS A CONSTANT
-            constantValue-=2;
-            rank_values.add(graph.getRank());
-
-        }
-        return rank_values;
+        return fitness_values;
         //Chromosomes are then selected
         //to the genetic operations proportionally to the values so obtained.
     }
-    public  int constantValue = 1000;
 
-    //linear Scaling. x ′ = ( x − x m i n ) / ( x m a x − x m i n ).
-    /*private double linearNormalize(double fitnessScore, ArrayList<Double> sortedFitnessValues) {
-        //linear normalization formula
-        double minValue = sortedFitnessValues.get(sortedFitnessValues.size() - 1);
-        double maxValue = sortedFitnessValues.get(0);
-        double normalizedValue = ((fitnessScore - minValue)) / (maxValue - minValue);  //like this?
-        return normalizedValue;
-    }*/
-    /*[E] Is it more correct  for this method to return Collection<Graph> or this as in GraphPopulation*/
+
+
     public GraphPopulation selection() {
-
-        for (Graph g : population) {
-            //traverse the population
-            //and check for each the fitness_score
-            //implement a way to select the individuals
-            //tournament select since it can be parallelized or rank-based?
-            if (g.rank[0] < 40) { //TODO WHAT VALUE SHOULD BE SELECTED , WHAT TO USE FOR THRESHOLD? -> they said that it shouln't be a big values as 1/2
-                population.remove(g);
+        ArrayList<Graph> selectedGraphs = new ArrayList<>();
+        //sort the population based on fitness score
+        Collections.sort(population, Comparator.comparingDouble(Graph::getFitnessScore));
+        ArrayList<Graph> parentGraphs = (ArrayList<Graph>) population.stream()
+                .limit(Math.min(10, population.size()))
+                .collect(Collectors.toList());
+        for (Graph g : parentGraphs) {
+                // idea create copies of the best graphs to fill the bound for populationSize
+                Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
+                // add the copies to ArrayList
+                selectedGraphs.add(copyGraph);
             }
-
-        }
-        return this;
-
+        GraphPopulation newGeneration = new GraphPopulation(selectedGraphs,populationSize,panel);
+        return newGeneration;
     }
     public Graph getInitialGraph() {
         return initialGraph;
@@ -105,8 +96,8 @@ public class GraphPopulation {
 
     public Graph combine() {
         //Why it doesn't want to resolve
-        Graph parent1 = population.get(random.nextInt(populationSize));
-        Graph parent2 =population.get(random.nextInt(populationSize));
+        Graph parent1 = population.get(random.nextInt(population.size()));
+        Graph parent2 =population.get(random.nextInt(population.size()));
 
         ArrayList<Node> nodesParent1= parent1.getNodes();
         ArrayList<Node[]> edgesParent1 = parent1.getEdges();
@@ -116,23 +107,19 @@ public class GraphPopulation {
 
         ArrayList<Node> childGraphNodes= new ArrayList<>();
         ArrayList<Node []> childGraphEdges= new ArrayList<>();
-        //childGraphNodes.addAll(0, nodesParent1);
+
 
         int separator= random.nextInt(min(nodesParent1.size(),nodesParent2.size())); //so we always have a bound
 
-        for (int i =0; i<= nodesParent1.size(); i++) {
-
-
+        for (int i =0; i< nodesParent1.size(); i++) {
             if (i <= separator) {
                 //childGraphNodes.add((Node) nodesParent1.subList(0, random.nextInt(nodesParent1.size())));
-                //will this work ?
                 childGraphNodes.add(nodesParent2.get(i));
             } else {
                 //then copy of parent2
-                childGraphNodes.add(nodesParent2.get(i));
+                childGraphNodes.add(nodesParent1.get(i));
             }
         }
-
                 // Traverse the edges from the first parent
                for (Node[] edge1 : edgesParent1) {
                    // if they exists  check  if they are connected
@@ -150,7 +137,7 @@ public class GraphPopulation {
                        }
 
 
-        Graph childGraph = new Graph(childGraphNodes, childGraphEdges,initialGraph.getH(),initialGraph.getW());
+        Graph childGraph = new Graph(childGraphNodes, childGraphEdges,parent1.getH(),parent1.getW());
        return childGraph;
     }
 
@@ -170,7 +157,7 @@ public class GraphPopulation {
     public Graph getGraph(double f)
     {
         int index = 0;
-        for (int i = 0; i <populationSize ; i++) {
+        for (int i = 0; i <population.size() ; i++) {
             if (population.get(i).fitnessScore == f)
             {
                 index=i;
@@ -178,22 +165,6 @@ public class GraphPopulation {
         }
         return population.get(index);
     }
-
-
-
-
-    //mutate edge is not neded initially // save for later testing may be useful
-    // public Collection<Graph> mutateEdge() {
-    //    Collection<Graph> m = selection();
-    // for (Graph mutant : m) {
-    //        // get a random edge and move it to a random location
-    //        Node[] edge = mutant.getEdges().get(random.nextInt(mutant.getEdges().size()));
-    //        edge[1] = Node.moveNode(edge[0], panel.getWidth(), panel.getHeight()); // also switch nodes ;)
-    //        edge[0] = Node.moveNode(edge[1], panel.getWidth(), panel.getHeight());
-    //
-    //    }
-    //    return m; //return the mutated population
-    //}
 
 
 }
