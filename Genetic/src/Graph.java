@@ -206,7 +206,7 @@ class Graph extends JPanel {
     public double edgeLengthDeviation(Graph graph)
     {
 
-        double optimalEdgeLength =Collections.min(lengths)+5;
+        double optimalEdgeLength =minimumNodeDistance()+5;
         double sum=0;
         Iterator<Double> iterator = lengths.iterator();
         while (iterator.hasNext()) {
@@ -245,7 +245,7 @@ class Graph extends JPanel {
     {
 
 
-        double minNodeDist = minimumNodeDistanceSum(this); // It should never return 0.
+       /* double minNodeDist = minimumNodeDistanceSum(this); // It should never return 0.
         double minNodeDist2 = Math.pow(minNodeDist, 2.0);
         double edgeLenDev = edgeLengthDeviation(this);
         double edgeCross = edgeCrossings();
@@ -255,7 +255,7 @@ class Graph extends JPanel {
         System.out.println(minNodeDist2);
         System.out.println(edgeLenDev);
         System.out.println(edgeCross);
-        //System.out.println(wnd2);
+        //System.out.println(wnd2);*/
 
 
 
