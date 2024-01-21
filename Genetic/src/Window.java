@@ -95,11 +95,11 @@ public class Window extends JPanel {
 
                         // if (!oneCheck && !twoCheck && !threeCheck && !fourCheck) {
 
-                        Graph initialGraph = new Graph(numEdges, numNodes, windowHeight, windowWidth);
+                        Graph initialGraph = new Graph(numEdges, numNodes, windowHeight/2, windowWidth/2);
                         GraphPanel graphPanel = new GraphPanel(initialGraph);
 
                         JFrame frame = new JFrame("Graph Display");
-                        frame.setSize(windowHeight, windowWidth);
+                        frame.setSize(windowWidth, windowHeight);
                         frame.add(graphPanel);
                         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                         frame.setVisible(true);

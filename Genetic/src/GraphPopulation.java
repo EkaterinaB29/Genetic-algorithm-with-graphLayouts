@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.min;
 
@@ -37,7 +36,9 @@ public class GraphPopulation {
         return populationSize;
     }
 
-
+    public ArrayList<Graph> getPopulation() {
+        return population;
+    }
     public GraphPanel getPanel() {
         return panel;
     }
@@ -66,14 +67,15 @@ public class GraphPopulation {
     }
 
 
-
     public GraphPopulation selection() {
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
         //sort the population based on fitness score
-        Collections.sort(population, Comparator.comparingDouble(Graph::getFitnessScore));
-        ArrayList<Graph> parentGraphs = (ArrayList<Graph>) population.stream()
-                .limit(Math.min(10, population.size()))
-                .collect(Collectors.toList());
+
+        List<Graph> parentGraphs = new ArrayList<>(population);
+        population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
+        population.reversed(); // I don't know which is the problem I think it is here
+        parentGraphs = (List<Graph>) population.subList(0, Math.min(10, parentGraphs.size()));
+
         for (Graph g : parentGraphs) {
                 // idea create copies of the best graphs to fill the bound for populationSize
                 Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
@@ -95,9 +97,14 @@ public class GraphPopulation {
 
 
     public Graph combine() {
-        //Why it doesn't want to resolve
-        Graph parent1 = population.get(random.nextInt(population.size()));
-        Graph parent2 =population.get(random.nextInt(population.size()));
+        Graph parent1;
+        Graph parent2;
+        /*ensure that always two different parents are chosen*/
+        do {
+             parent1 = population.get(random.nextInt(population.size()));
+             parent2 = population.get(random.nextInt(population.size()));
+        }
+        while(parent1 == parent2);
 
         ArrayList<Node> nodesParent1= parent1.getNodes();
         ArrayList<Node[]> edgesParent1 = parent1.getEdges();

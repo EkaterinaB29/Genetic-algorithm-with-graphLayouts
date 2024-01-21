@@ -43,3 +43,35 @@
     public double[] getRank() {
         return rank;
     }
+
+
+    //////
+     public Graph mutation() {
+
+            Node random_node = this.getRandomNode();
+            for ( int i=0 ; i < edges.size(); i++) {
+                double angle=random.nextDouble(180);
+                if( this.edges.get(i)[0] == random_node || random_node == this.edges.get(i)[1])
+                {
+                    //get the pair [random_node, some other_node]
+                    double radius = Node.euclideanDistance(this.edges.get(i)[0],this.edges.get(i)[1]);
+                    double newX = (radius * Math.cos( angle * Math.PI / 180)) + (random_node.x);
+                    double newY = (radius * Math.sin(angle* Math.PI / 180)) + (random_node.y);
+                    random_node.moveNode( newX,newY);
+                }
+
+            }
+
+            this.fitnessScore = fitnessEvaluation();
+
+            return this;
+
+
+
+       public  Node moveNode( double value1, double value2)
+         {
+             this.x = value1; // move the node to a random position according width
+             this.y =value2; // move the node to a random position according height
+             return this;
+         }
+

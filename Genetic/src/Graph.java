@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.sql.Array;
 import java.util.*;
 
 import static java.awt.geom.Line2D.linesIntersect;
@@ -26,12 +27,10 @@ class Graph extends JPanel {
         this.numEdges = m;
         this.h = h;
         this.w = w;
-        //maybe will be needed
-        //this.rank = new double[]{0, 0};
 
         addNodes();
         addEdges();
-       //minimumDistanceNeighbour();
+        //minimumDistanceNeighbour();
         this.fitnessScore = fitnessEvaluation();
 
 
@@ -47,13 +46,39 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        //this.rank = new double[]{0, 0};
-        //here I don't
-       // minimumDistanceNeighbour(this); // ???calculates the lenghts so
-        // I need to call it here?
         this.fitnessScore = fitnessEvaluation();
 
     }
+
+    /* A copy constructor. */
+    public Graph(Graph graph)
+    {
+        nodes = new ArrayList<Node>();
+        for (Node node : graph.nodes) {
+            nodes.add(new Node(node));
+        }
+
+        edges = new ArrayList<Node[]>();
+        for (Node[] edge : graph.edges) {
+            Node node0 = getNodeId(edge[0].getId());
+            Node node1 = getNodeId(edge[1].getId());
+            Node[] newEdge = {node0, node1};
+            edges.add(newEdge);
+        }
+
+        lengths = new ArrayList<Double>();
+        lengths.addAll(graph.lengths);
+
+        numNodes = nodes.size();
+        numEdges = edges.size();
+
+        h = graph.h;
+        w = graph.w;
+
+        fitnessScore = graph.fitnessScore;
+        currentIndex = graph.currentIndex;
+    }
+
     public double getFitnessScore()
     {
         return fitnessScore;
@@ -74,14 +99,22 @@ class Graph extends JPanel {
         return nodes;
     }
 
+    public Node getNodeId(int id) {
+        for (Node node : nodes) {
+            if (node.getId() == id)
+                return node;
+        }
+        return null;
+    }
+
     // method to add nodes
 
     public void addNodes() {
-
+        int id = 0;
         while (getNodes().size() < numNodes) {
             double x = random.nextInt(w); //bound so it is visible
             double y = random.nextInt(h);
-            Node node = new Node(x, y);
+            Node node = new Node(id, x, y);
             boolean flag = false;
             for (Node n:getNodes()) {
                 // if coordinates have  already been assigned
@@ -90,9 +123,10 @@ class Graph extends JPanel {
                     break;
                 }
             }
-            // If coordinates don't exist, add the node
+
             if (!flag) {
                 getNodes().add(node);
+                id++;
             }
         }
     }
@@ -109,7 +143,7 @@ class Graph extends JPanel {
             {
                 destinationNode= getRandomNode();
                 Node[] pair ={sourceNode, destinationNode};
-                if(containsEdge(pair))
+                if(sourceNode == destinationNode || containsEdge(pair))
                 {
                     destinationNode=null;
                 }
@@ -147,7 +181,6 @@ class Graph extends JPanel {
         } else {
             // Reset currentIndex to 0 when all nodes have been traversed
             currentIndex = 0;
-
             return getNodes().get(0); //
         }
     }
@@ -205,8 +238,10 @@ class Graph extends JPanel {
     //* calcualated as a difference between the value of the edge minus optimalEdgeLength
     public double edgeLengthDeviation(Graph graph)
     {
+        if (getLengths().isEmpty())
+            return 0;
 
-        double optimalEdgeLength =minimumNodeDistance()+5;
+        double optimalEdgeLength =Collections.min(lengths)+5;
         double sum=0;
         Iterator<Double> iterator = lengths.iterator();
         while (iterator.hasNext()) {
@@ -233,7 +268,7 @@ class Graph extends JPanel {
             i++;
 //count num if intersect - find the all the edges ehwre all the deges are A ,and  when one fo
             //go trough all edges ; for each edge seach all the other edges where one of the components of the pair is present and found how many it is present ,
-           // a-> b  tak 1st and loop trough the others and check how many exist  l how many crosses you overcounted and substract
+            // a-> b  tak 1st and loop trough the others and check how many exist  l how many crosses you overcounted and substract
             //geometrcak don't
         }
         //System.out.println(edgeCross);
@@ -243,28 +278,25 @@ class Graph extends JPanel {
     //  fintness evaluation
     public double fitnessEvaluation()
     {
-
-
-       /* double minNodeDist = minimumNodeDistanceSum(this); // It should never return 0.
+        double minNodeDist = minimumNodeDistanceSum(this);
         double minNodeDist2 = Math.pow(minNodeDist, 2.0);
         double edgeLenDev = edgeLengthDeviation(this);
         double edgeCross = edgeCrossings();
 
-
+        // double wnd2 = Math.pow(getW()*getH(),2);
+        /*
+        System.out.println("----");
         System.out.println(minNodeDist);
         System.out.println(minNodeDist2);
         System.out.println(edgeLenDev);
         System.out.println(edgeCross);
-        //System.out.println(wnd2);*/
+         */
+        //System.out.println(wnd2);
 
 
+        double fitness_score = 2 * minNodeDist - 2 * edgeLenDev - 2.5 * (edgeLenDev/minNodeDist - 0.25 * minNodeDist2 * numNodes - edgeCross );
 
-     double fitness_score= 2 * minimumNodeDistanceSum(this)
-                - 2 * edgeLengthDeviation(this)
-                -2.5*(edgeLengthDeviation(this)/minimumNodeDistance()
-                -0.25*(Math.pow(minimumNodeDistance(), 2.0) * numNodes)
-                -(edgeCrossings())); //increase penalty for crosses
-        ;
+
 
         return fitness_score;
     }
@@ -274,12 +306,12 @@ class Graph extends JPanel {
     public Graph mutation() {
 
         Node random_node = this.getRandomNode();
-        for ( Node[] n : edges) {
-            double angle=random.nextDouble(360);
-            if(n[0] == random_node || random_node == n[1])
+        for ( int i=0 ; i < edges.size(); i++) {
+            double angle=random.nextDouble(180);
+            if( this.edges.get(i)[0] == random_node || random_node == this.edges.get(i)[1])
             {
                 //get the pair [random_node, some other_node]
-                double radius = Node.euclideanDistance(n[0],n[1]);
+                double radius = Node.euclideanDistance(this.edges.get(i)[0],this.edges.get(i)[1]);
                 double newX = (radius * Math.cos( angle * Math.PI / 180)) + (random_node.x);
                 double newY = (radius * Math.sin(angle* Math.PI / 180)) + (random_node.y);
                 Node.moveNode(random_node, newX,newY);
@@ -287,9 +319,11 @@ class Graph extends JPanel {
 
         }
 
+        this.fitnessScore = fitnessEvaluation();
+
         return this;
     }
 
 
-    }
+}
 
