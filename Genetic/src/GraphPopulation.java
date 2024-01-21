@@ -46,7 +46,7 @@ public class GraphPopulation {
     // function to create the population of graphs according to the first one
     private  void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i <  populationSize; i++) {
-            population.add(new Graph(initialGraph.numEdges, initialGraph.numNodes, initialGraph.getH(), initialGraph.getW()));
+            population.add(new Graph(initialGraph.numNodes,initialGraph.numEdges, initialGraph.getH(), initialGraph.getW()));
         }
 
     }
@@ -71,10 +71,11 @@ public class GraphPopulation {
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
         //sort the population based on fitness score
 
-        List<Graph> parentGraphs = new ArrayList<>(population);
+        //List<Graph> parentGraphs = new ArrayList<>();
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
-        population.reversed(); // I don't know which is the problem I think it is here
-        parentGraphs = (List<Graph>) population.subList(0, Math.min(10, parentGraphs.size()));
+        Collections.reverse(population); // I don't know which is the problem I think it is here
+
+        List<Graph> parentGraphs = new ArrayList<>(population.subList(0, 10));
 
         for (Graph g : parentGraphs) {
                 // idea create copies of the best graphs to fill the bound for populationSize
@@ -99,12 +100,13 @@ public class GraphPopulation {
     public Graph combine() {
         Graph parent1;
         Graph parent2;
+
         /*ensure that always two different parents are chosen*/
         do {
-             parent1 = population.get(random.nextInt(population.size()));
-             parent2 = population.get(random.nextInt(population.size()));
+             parent1 = this.getPopulation().get(random.nextInt(population.size()));
+             parent2 =this.getPopulation().get(random.nextInt(population.size()));
         }
-        while(parent1 == parent2);
+        while(parent1.equals(parent2));
 
         ArrayList<Node> nodesParent1= parent1.getNodes();
         ArrayList<Node[]> edgesParent1 = parent1.getEdges();
@@ -118,13 +120,13 @@ public class GraphPopulation {
 
         int separator= random.nextInt(min(nodesParent1.size(),nodesParent2.size())); //so we always have a bound
 
-        for (int i =0; i< nodesParent1.size(); i++) {
+        for (int i =0; i< Math.max(nodesParent1.size(), nodesParent2.size()); i++) {
             if (i <= separator) {
                 //childGraphNodes.add((Node) nodesParent1.subList(0, random.nextInt(nodesParent1.size())));
-                childGraphNodes.add(nodesParent2.get(i));
+                childGraphNodes.add(new Node(nodesParent2.get(i)));
             } else {
                 //then copy of parent2
-                childGraphNodes.add(nodesParent1.get(i));
+                childGraphNodes.add(new Node(nodesParent1.get(i)));
             }
         }
                 // Traverse the edges from the first parent
@@ -132,14 +134,16 @@ public class GraphPopulation {
                    // if they exists  check  if they are connected
                    if (childGraphNodes.contains(edge1[0]) && childGraphNodes.contains(edge1[1])) {
 
-                       childGraphEdges.add(edge1);
+                       Node[] edgeN={edge1[0],edge1[1]};
+                       childGraphEdges.add(edgeN);
                    }
                }
                //now the same for the second parent
                        for (Node[] edge2 : edgesParent2) {
                            if (childGraphNodes.contains(edge2[0]) && childGraphNodes.contains(edge2[1]))
                            {
-                               childGraphEdges.add(edge2);
+                               Node[] edgeN={edge2[0],edge2[1]};
+                               childGraphEdges.add(edgeN);
                            }
                        }
 
@@ -154,6 +158,7 @@ public class GraphPopulation {
     {
         for (Graph g:this.population) {
             double randomValue = new Random().nextDouble();
+
             if(randomValue <= MUTATION_PROBABILITY) {
                 g.mutation();
             }

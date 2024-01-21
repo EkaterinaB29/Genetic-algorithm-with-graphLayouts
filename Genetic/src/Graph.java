@@ -14,12 +14,12 @@ class Graph extends JPanel {
     int numEdges;
     public int h;
     public int w;
-    public double[] rank;
+
 
     static Random random = new Random();
 
     // constructor
-    public Graph(int m, int n, int h, int w) {
+    public Graph(int n, int m, int h, int w) {
         this.nodes = new ArrayList<>();
         this.edges = new ArrayList<>();
         this.lengths= new ArrayList<>();

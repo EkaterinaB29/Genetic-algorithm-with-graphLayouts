@@ -38,17 +38,17 @@ public class Computation {
             //need to represent each generation's best sollution based on fitness
             // Assuming newGeneration.getPopulation() returns an ArrayList<Graph>
             ArrayList<Graph> best = newGeneration.getPopulation();
-            for ( Graph g: newGeneration.getPopulation()) {
+           /* for ( Graph g: newGeneration.getPopulation()) {
                 System.out.print(g.fitnessScore +" ");
                 System.out.println(g.getFitnessScore());
-            }
+            }*/
 
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
 
             Graph bestGraph = best.getFirst(); //if I put getLast() I get infinity scores and plus some of the nodes are without edges?
             GraphPanel graphPanel = new GraphPanel(bestGraph);
             JFrame frame = new JFrame("Graph Display");
-            frame.setSize(bestGraph.getW()*2,bestGraph.getH()*2);
+            frame.setSize(bestGraph.getW(),bestGraph.getH());
             frame.add(graphPanel);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
