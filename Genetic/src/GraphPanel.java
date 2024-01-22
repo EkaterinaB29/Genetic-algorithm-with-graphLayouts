@@ -14,16 +14,19 @@ class GraphPanel extends JPanel {
         super.paintComponent(g);
 
         //g.translate(this.getWidth()/2,this.getHeight()/2);
-        
-
         // Draw edges
         g.setColor(Color.black);
-        int i=0;
+        int i = 0;
 
         while (i < graph.getEdges().size()) {
             Node start = graph.getEdges().get(i)[0];
             Node end = graph.getEdges().get(i)[1];
-            g.drawLine((int) start.getX(), (int) start.getY(), (int) end.getX(), (int) end.getY());
+
+            int x = (int) start.getX();
+            int y = (int) start.getY();
+            int width = (int) (end.getX());
+            int height = (int) (end.getY());
+            g.drawLine(x, y, width, height);
             i++;
         }
 
@@ -32,6 +35,8 @@ class GraphPanel extends JPanel {
         g.setColor(Color.RED);
         for (Node node : graph.getNodes()) {
             g.fillOval((int) node.getX()-5, (int) node.getY()-5, 15, 15);
+            g.drawString(""+node.id,(int) node.getX()-5, (int) node.getY()-5);
+
         }
 
         g.setColor(Color.BLACK);

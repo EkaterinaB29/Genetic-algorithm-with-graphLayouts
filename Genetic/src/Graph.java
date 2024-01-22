@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.sql.Array;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.awt.geom.Line2D.linesIntersect;
 
@@ -38,8 +39,12 @@ class Graph extends JPanel {
     //used in the generation of the new population
     public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w)
     {
-        this.nodes=nodes;
-        this.edges= edges;
+        this.nodes= new ArrayList<>(nodes);
+        nodes.forEach(node -> {
+            node.x += random.nextInt(-1,1) * random.nextInt(4);
+            node.y += random.nextInt(-1,1) * random.nextInt(4);
+        });
+        this.edges= new ArrayList<>(edges);
         this.numNodes = nodes.size();
         this.numEdges = edges.size();
         this.lengths= new ArrayList<>();
@@ -123,7 +128,6 @@ class Graph extends JPanel {
                     break;
                 }
             }
-
             if (!flag) {
                 getNodes().add(node);
                 id++;
@@ -134,24 +138,12 @@ class Graph extends JPanel {
 
     //
     public void addEdges() {
-
-        int edgesCount = 0;
-        while (edgesCount < numEdges) {
-            Node sourceNode = getSequentialNode();
-            Node destinationNode = null;
-            while( destinationNode == null)
-            {
-                destinationNode= getRandomNode();
-                Node[] pair ={sourceNode, destinationNode};
-                if(sourceNode == destinationNode || containsEdge(pair))
-                {
-                    destinationNode=null;
-                }
-            }
-            Node[] pair ={sourceNode, destinationNode};
+        for (int i = 0; i < numEdges; i++) {
+            Collections.shuffle(nodes);
+            Node sourceNode = nodes.getFirst();
+            Node destinationNode = nodes.stream().filter(node -> node!=sourceNode).toList().getFirst();
+            Node[] pair = {sourceNode, destinationNode};
             edges.add(pair);
-            edgesCount++;
-
         }
     }
 
@@ -312,7 +304,6 @@ class Graph extends JPanel {
     //mutation on a single Node
 
     public Graph mutation() {
-
         Node random_node = this.getRandomNode();
         for ( int i=0 ; i < edges.size(); i++) {
             double angle=random.nextDouble(180);
@@ -324,11 +315,8 @@ class Graph extends JPanel {
                 double newY = (radius * Math.sin(angle* Math.PI / 180)) + (random_node.y);
                 Node.moveNode(random_node, newX,newY);
             }
-
         }
-
         this.fitnessScore = fitnessEvaluation();
-
         return this;
     }
 

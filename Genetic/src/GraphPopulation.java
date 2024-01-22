@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.min;
 
@@ -8,7 +9,7 @@ public class GraphPopulation {
     static Random random = new Random();
 
     ArrayList<Graph> population = new ArrayList<>();
-    ArrayList<Double> fitness_values;
+    static final double MUTATION_PROBABILITY = 0.001;
 
     public Graph initialGraph;
     public GraphPanel panel;
@@ -46,26 +47,14 @@ public class GraphPopulation {
     // function to create the population of graphs according to the first one
     private  void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i <  populationSize; i++) {
-            population.add(new Graph(initialGraph.numNodes,initialGraph.numEdges, initialGraph.getH(), initialGraph.getW()));
+            population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
+           // mutation(1);
         }
-
     }
 
-    public ArrayList<Double> fitnessScoreEvaluate(Collection<Graph> population) {
-
-        fitness_values = new ArrayList<>();
-
-        for (Graph graph : population) {
-            fitness_values.add(graph.fitnessScore); // add the scores into arraylist
-        }
-        Collections.sort(fitness_values,Collections.reverseOrder()); //sort in dsc
-
-
-        return fitness_values;
-        //Chromosomes are then selected
-        //to the genetic operations proportionally to the values so obtained.
+    public void fitnessScoreEvaluate(ArrayList<Graph> population) {
+        population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
     }
-
 
     public GraphPopulation selection() {
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
@@ -73,9 +62,9 @@ public class GraphPopulation {
 
         //List<Graph> parentGraphs = new ArrayList<>();
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
-        Collections.reverse(population); // I don't know which is the problem I think it is here
+        Collections.reverse(population);
 
-        List<Graph> parentGraphs = new ArrayList<>(population.subList(0, 10));
+        List<Graph> parentGraphs = new ArrayList<>(population.subList(0,population.size()/2));
 
         for (Graph g : parentGraphs) {
             // idea create copies of the best graphs to fill the bound for populationSize
@@ -83,83 +72,77 @@ public class GraphPopulation {
             // add the copies to ArrayList
             selectedGraphs.add(copyGraph);
         }
-        GraphPopulation newGeneration = new GraphPopulation(selectedGraphs,populationSize,panel);
-        return newGeneration;
+        return new GraphPopulation(selectedGraphs,populationSize,panel);
     }
     public Graph getInitialGraph() {
         return initialGraph;
     }
 
-    public GraphPopulation addNewGraph(Graph g)
+    public GraphPopulation addNewGraphs(ArrayList<Graph> children)
     {
-        population.add(g);
+        population.addAll(children);
         return this;
     }
 
 
-    public Graph combine() {
+    public ArrayList<Graph> combine() {
         Graph parent1;
         Graph parent2;
+        ArrayList<Graph> children = new ArrayList<>();
+        for (int i = 0; i < population.size(); i+=2) {
+            parent1 = this.getPopulation().get(i);
+            parent2 = this.getPopulation().get(i+1);
+            ArrayList<Node> nodesParent1= parent1.getNodes();
+            ArrayList<Node[]> edgesParent1 = parent1.getEdges();
+            ArrayList<Node> nodesParent2= parent2.getNodes();
+            ArrayList<Node[]> edgesParent2 = parent2.getEdges();
 
-        /*ensure that always two different parents are chosen*/
-        do {
-            parent1 = this.getPopulation().get(random.nextInt(population.size()));
-            parent2 =this.getPopulation().get(random.nextInt(population.size()));
-        }
-        while(parent1.equals(parent2));
+            nodesParent1.sort(Comparator.comparingInt(Node::getId));
+            nodesParent2.sort(Comparator.comparingInt(Node::getId));
+            ArrayList<Node> firstChildNodes= new ArrayList<>();
+            ArrayList<Node []> firstChildEdges= new ArrayList<>();
 
-        ArrayList<Node> nodesParent1= parent1.getNodes();
-        ArrayList<Node[]> edgesParent1 = parent1.getEdges();
-        ArrayList<Node> nodesParent2= parent2.getNodes();
-        ArrayList<Node[]> edgesParent2 = parent2.getEdges();
+            ArrayList<Node> secondChildNodes= new ArrayList<>();
+            ArrayList<Node []> secondchildEdges= new ArrayList<>();
 
 
-        ArrayList<Node> childGraphNodes= new ArrayList<>();
-        ArrayList<Node []> childGraphEdges= new ArrayList<>();
+            int separator= random.nextInt(nodesParent2.size()); //so we always have a bound
 
 
-        int separator= random.nextInt(nodesParent2.size()); //so we always have a bound
-
-        for (int i =0; i< nodesParent1.size(); i++) {
-            if (i <= separator) {
-                //childGraphNodes.add((Node) nodesParent1.subList(0, random.nextInt(nodesParent1.size())));
-                childGraphNodes.add((nodesParent2.get(i)));
-            } else {
-                //then copy of parent2
-                childGraphNodes.add((nodesParent1.get(i)));
+            for (int j =0; j< nodesParent1.size(); j++) {
+                if (j <= separator) {
+                    firstChildNodes.add(new Node(nodesParent2.get(j)));
+                    secondChildNodes.add(new Node(nodesParent1.get(j)));
+                } else {
+                    //then copy of parent2
+                    secondChildNodes.add(new Node(nodesParent2.get(j)));
+                    firstChildNodes.add(new Node(nodesParent1.get(j)));
+                }
             }
+            edgesParent2.forEach(nodes -> {
+                Node firstOrigin = firstChildNodes.stream().filter(node -> node.id == nodes[0].id).toList().getFirst();
+                Node firstDestination = firstChildNodes.stream().filter(node -> node.id == nodes[1].id).toList().getFirst();
+                firstChildEdges.add(new Node[] {firstOrigin,firstDestination});
+
+                Node secondOrigin = secondChildNodes.stream().filter(node -> node.id == nodes[0].id).toList().getFirst();
+                Node secondDestination = secondChildNodes.stream().filter(node -> node.id == nodes[1].id).toList().getFirst();
+                secondchildEdges.add(new Node[] {secondOrigin,secondDestination});
+            });
+
+            children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW()));
+            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW()));
         }
-        // Traverse the edges from the first parent
-        for (Node[] edge1 : edgesParent1) {
-            // if they exists  check  if they are connected
-            if (childGraphNodes.contains(edge1[0]) && childGraphNodes.contains(edge1[1])) {
-
-
-                childGraphEdges.add(edge1);
-            }
-        }
-        //now the same for the second parent
-        for (Node[] edge2 : edgesParent2) {
-            if (childGraphNodes.contains(edge2[0]) && childGraphNodes.contains(edge2[1]))
-            {
-                //Node[] edgeN={edge2[0],edge2[1]};
-                childGraphEdges.add(edge2);
-            }
-        }
-
-
-        Graph childGraph = new Graph(childGraphNodes, childGraphEdges,parent1.getH(),parent1.getW());
-        return childGraph;
+        return children;
     }
 
-    private static final double MUTATION_PROBABILITY = 0.001;
 
-    public GraphPopulation mutation()
+
+    public GraphPopulation mutation(double mutationRate)
     {
         for (Graph g:this.population) {
             double randomValue = new Random().nextDouble();
 
-            if(randomValue <= MUTATION_PROBABILITY) {
+            if(randomValue <= mutationRate) {
                 g.mutation();
             }
         }

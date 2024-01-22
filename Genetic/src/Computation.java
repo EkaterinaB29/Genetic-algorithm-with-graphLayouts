@@ -1,10 +1,5 @@
 import javax.swing.*;
-import java.awt.*;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.util.Collections.max;
-import static java.util.Collections.min;
 
 public class Computation {
     public  GraphPopulation population;
@@ -20,28 +15,16 @@ public class Computation {
     }
     public void compute()
     {
-
         do
         {
-
-               GraphPopulation newGeneration = population.selection();
-                //we need to combine and add
-                for(int g = 0;g<90;g++)
-                {
-                    newGeneration.addNewGraph(newGeneration.combine());
-                    //we need to mutate
-                    newGeneration.mutation();
-
-                }
-
-
+            GraphPopulation newGeneration = population.selection();
+            //we need to combine and add
+            newGeneration.addNewGraphs(newGeneration.combine());
+            //we need to mutatenewGeneration.mutation();
+            newGeneration.mutation(GraphPopulation.MUTATION_PROBABILITY);
             //need to represent each generation's best sollution based on fitness
             // Assuming newGeneration.getPopulation() returns an ArrayList<Graph>
             ArrayList<Graph> best = newGeneration.getPopulation();
-           /* for ( Graph g: newGeneration.getPopulation()) {
-                System.out.print(g.fitnessScore +" ");
-                System.out.println(g.getFitnessScore());
-            }*/
 
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
 
