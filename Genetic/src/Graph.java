@@ -27,7 +27,6 @@ class Graph extends JPanel {
         this.numEdges = m;
         this.h = h;
         this.w = w;
-
         addNodes();
         addEdges();
         //minimumDistanceNeighbour();
@@ -51,6 +50,7 @@ class Graph extends JPanel {
     }
 
     /* A copy constructor. */
+
     public Graph(Graph graph)
     {
         nodes = new ArrayList<Node>();
@@ -174,7 +174,7 @@ class Graph extends JPanel {
 
     public Node getSequentialNode() {
         // Ensure that currentIndex is within the bounds of the list
-        if (currentIndex < getNodes().size()) {
+        if ( !getNodes().isEmpty() && currentIndex < getNodes().size()) {
             Node node = getNodes().get(currentIndex);
             currentIndex++;
             return node;
@@ -222,14 +222,14 @@ class Graph extends JPanel {
      *
      */
 
-    //I think I don't need this one anymore
+    /*I think I don't need this one anymore
     public double minimumNodeDistance() {
         double minNodeD = Double.MAX_VALUE;
         if (!getLengths().isEmpty()) {
             minNodeD = Collections.min(lengths);
         }
         return minNodeD;
-    }
+    }*/
 
     /*Edge Length Deviation: The length of each edge is measured and
     compared to the ”optimal”edge length, which is little more than
@@ -266,7 +266,7 @@ class Graph extends JPanel {
                 j++;
             }
             i++;
-//count num if intersect - find the all the edges ehwre all the deges are A ,and  when one fo
+            //count num if intersect - find the all the edges ehwre all the deges are A ,and  when one fo
             //go trough all edges ; for each edge seach all the other edges where one of the components of the pair is present and found how many it is present ,
             // a-> b  tak 1st and loop trough the others and check how many exist  l how many crosses you overcounted and substract
             //geometrcak don't
@@ -296,7 +296,15 @@ class Graph extends JPanel {
 
         double fitness_score = 2 * minNodeDist - 2 * edgeLenDev - 2.5 * (edgeLenDev/minNodeDist - 0.25 * minNodeDist2 * numNodes - edgeCross );
 
-
+        //minimumNodeDistance() this is maybe redundant?
+        /*
+     double fitness_score= 2 * minimumNodeDistanceSum(this)
+                - 2 * edgeLengthDeviation(this)
+                -2.5*(edgeLengthDeviation(this)/minimumNodeDistance()
+                -0.25*(Math.pow(minimumNodeDistance(), 2.0) * numNodes)
+                -(edgeCrossings())); //increase penalty for crosses
+        ;
+        */
 
         return fitness_score;
     }

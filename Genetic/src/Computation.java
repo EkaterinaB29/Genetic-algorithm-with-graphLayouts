@@ -45,7 +45,7 @@ public class Computation {
 
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
 
-            Graph bestGraph = best.getFirst(); //if I put getLast() I get infinity scores and plus some of the nodes are without edges?
+            Graph bestGraph = best.getLast(); //if I put getLast() I get infinity scores and plus some of the nodes are without edges?
             GraphPanel graphPanel = new GraphPanel(bestGraph);
             JFrame frame = new JFrame("Graph Display");
             frame.setSize(bestGraph.getW(),bestGraph.getH());

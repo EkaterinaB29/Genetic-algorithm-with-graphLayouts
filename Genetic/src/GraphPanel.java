@@ -12,7 +12,7 @@ class GraphPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        super.setSize(graph.getW()*2,graph.getH()*2);
+
         //g.translate(this.getWidth()/2,this.getHeight()/2);
         
 

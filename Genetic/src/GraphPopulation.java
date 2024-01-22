@@ -19,8 +19,8 @@ public class GraphPopulation {
     public GraphPopulation(Graph initialGraph,int populationSize, GraphPanel panel) {
 
         this.populationSize = populationSize;
-         initialGraphPopulation(initialGraph);
-         fitnessScoreEvaluate(population);
+        initialGraphPopulation(initialGraph);
+        fitnessScoreEvaluate(population);
 
     }
     public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel)
@@ -78,11 +78,11 @@ public class GraphPopulation {
         List<Graph> parentGraphs = new ArrayList<>(population.subList(0, 10));
 
         for (Graph g : parentGraphs) {
-                // idea create copies of the best graphs to fill the bound for populationSize
-                Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
-                // add the copies to ArrayList
-                selectedGraphs.add(copyGraph);
-            }
+            // idea create copies of the best graphs to fill the bound for populationSize
+            Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
+            // add the copies to ArrayList
+            selectedGraphs.add(copyGraph);
+        }
         GraphPopulation newGeneration = new GraphPopulation(selectedGraphs,populationSize,panel);
         return newGeneration;
     }
@@ -103,8 +103,8 @@ public class GraphPopulation {
 
         /*ensure that always two different parents are chosen*/
         do {
-             parent1 = this.getPopulation().get(random.nextInt(population.size()));
-             parent2 =this.getPopulation().get(random.nextInt(population.size()));
+            parent1 = this.getPopulation().get(random.nextInt(population.size()));
+            parent2 =this.getPopulation().get(random.nextInt(population.size()));
         }
         while(parent1.equals(parent2));
 
@@ -118,38 +118,38 @@ public class GraphPopulation {
         ArrayList<Node []> childGraphEdges= new ArrayList<>();
 
 
-        int separator= random.nextInt(min(nodesParent1.size(),nodesParent2.size())); //so we always have a bound
+        int separator= random.nextInt(nodesParent2.size()); //so we always have a bound
 
-        for (int i =0; i< Math.max(nodesParent1.size(), nodesParent2.size()); i++) {
+        for (int i =0; i< nodesParent1.size(); i++) {
             if (i <= separator) {
                 //childGraphNodes.add((Node) nodesParent1.subList(0, random.nextInt(nodesParent1.size())));
-                childGraphNodes.add(new Node(nodesParent2.get(i)));
+                childGraphNodes.add((nodesParent2.get(i)));
             } else {
                 //then copy of parent2
-                childGraphNodes.add(new Node(nodesParent1.get(i)));
+                childGraphNodes.add((nodesParent1.get(i)));
             }
         }
-                // Traverse the edges from the first parent
-               for (Node[] edge1 : edgesParent1) {
-                   // if they exists  check  if they are connected
-                   if (childGraphNodes.contains(edge1[0]) && childGraphNodes.contains(edge1[1])) {
+        // Traverse the edges from the first parent
+        for (Node[] edge1 : edgesParent1) {
+            // if they exists  check  if they are connected
+            if (childGraphNodes.contains(edge1[0]) && childGraphNodes.contains(edge1[1])) {
 
-                       Node[] edgeN={edge1[0],edge1[1]};
-                       childGraphEdges.add(edgeN);
-                   }
-               }
-               //now the same for the second parent
-                       for (Node[] edge2 : edgesParent2) {
-                           if (childGraphNodes.contains(edge2[0]) && childGraphNodes.contains(edge2[1]))
-                           {
-                               Node[] edgeN={edge2[0],edge2[1]};
-                               childGraphEdges.add(edgeN);
-                           }
-                       }
+
+                childGraphEdges.add(edge1);
+            }
+        }
+        //now the same for the second parent
+        for (Node[] edge2 : edgesParent2) {
+            if (childGraphNodes.contains(edge2[0]) && childGraphNodes.contains(edge2[1]))
+            {
+                //Node[] edgeN={edge2[0],edge2[1]};
+                childGraphEdges.add(edge2);
+            }
+        }
 
 
         Graph childGraph = new Graph(childGraphNodes, childGraphEdges,parent1.getH(),parent1.getW());
-       return childGraph;
+        return childGraph;
     }
 
     private static final double MUTATION_PROBABILITY = 0.001;
@@ -180,4 +180,3 @@ public class GraphPopulation {
 
 
 }
-
