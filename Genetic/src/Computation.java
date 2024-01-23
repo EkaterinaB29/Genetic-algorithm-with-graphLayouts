@@ -28,15 +28,13 @@ public class Computation {
 
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
 
-            Graph bestGraph = best.getLast(); //if I put getLast() I get infinity scores and plus some of the nodes are without edges?
+            Graph bestGraph = best.getLast();
             GraphPanel graphPanel = new GraphPanel(bestGraph);
             JFrame frame = new JFrame("Graph Display");
             frame.setSize(bestGraph.getW(),bestGraph.getH());
             frame.add(graphPanel);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
-
-
             iterations--;
         }while(iterations>0);
         long t = System.currentTimeMillis();

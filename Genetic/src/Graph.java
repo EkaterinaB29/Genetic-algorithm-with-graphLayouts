@@ -41,10 +41,10 @@ class Graph extends JPanel {
     {
         this.nodes= new ArrayList<>(nodes);
         nodes.forEach(node -> {
-            node.x += random.nextInt(-1,1) * random.nextInt(4);
+            node.x += random.nextInt(-1,1) * random.nextInt(4);  // this I am not sure if it is okay?
             node.y += random.nextInt(-1,1) * random.nextInt(4);
         });
-        this.edges= new ArrayList<>(edges);
+        this.edges= edges;
         this.numNodes = nodes.size();
         this.numEdges = edges.size();
         this.lengths= new ArrayList<>();
@@ -136,7 +136,7 @@ class Graph extends JPanel {
     }
 
 
-    //
+    //he changed this one :(
     public void addEdges() {
         for (int i = 0; i < numEdges; i++) {
             Collections.shuffle(nodes);

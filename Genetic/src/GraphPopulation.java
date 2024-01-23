@@ -4,18 +4,12 @@ import java.util.stream.Collectors;
 import static java.lang.Math.min;
 
 public class GraphPopulation {
-
-
     static Random random = new Random();
-
     ArrayList<Graph> population = new ArrayList<>();
     static final double MUTATION_PROBABILITY = 0.001;
-
     public Graph initialGraph;
     public GraphPanel panel;
-
     public int populationSize;
-
 
     public GraphPopulation(Graph initialGraph,int populationSize, GraphPanel panel) {
 
@@ -48,7 +42,7 @@ public class GraphPopulation {
     private  void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i <  populationSize; i++) {
             population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
-           // mutation(1);
+            // mutation(1);
         }
     }
 

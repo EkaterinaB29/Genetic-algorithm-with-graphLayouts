@@ -8,5 +8,6 @@ public class Main{
             Window window = new Window();
             window.setVisible(true);
             window.setSize(500,400);
+
     }
 }
