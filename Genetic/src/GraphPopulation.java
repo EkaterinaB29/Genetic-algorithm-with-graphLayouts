@@ -78,7 +78,7 @@ public class GraphPopulation {
         return this;
     }
 
-
+    /*two parents- graph reproduce and create 2 children*/
     public ArrayList<Graph> combine() {
         Graph parent1;
         Graph parent2;

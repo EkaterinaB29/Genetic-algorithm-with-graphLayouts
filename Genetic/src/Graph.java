@@ -136,7 +136,7 @@ class Graph extends JPanel {
     }
 
 
-
+    
     public void addEdges() {
         for (int i = 0; i < numEdges; i++) {
             Collections.shuffle(nodes);
@@ -202,7 +202,7 @@ class Graph extends JPanel {
     public double minimumNodeDistanceSum(Graph graph) {
         double sum = 0;
         for (Node node : this.getNodes()) {
-            sum += minimumDistanceNeighbour(node); 
+            sum += minimumDistanceNeighbour(node); // do I send this or graph? And how to know which one?
             //System.out.println(sum);
         }
         return sum;
