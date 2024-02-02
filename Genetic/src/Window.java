@@ -7,10 +7,9 @@ import java.awt.event.ActionListener;
 
 public class Window extends JPanel {
 
-     public static int p =100; // Is this okay?
-    //Graph initialGraph;
-
-    JFrame frame = new JFrame("Choose initial values!");
+     public static int p =100;
+     boolean flag = true;
+       JFrame frame = new JFrame("Choose initial values!");
 
     public Window() {
 
@@ -77,12 +76,6 @@ public class Window extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                // System.out.println("Button clicked");
-                /*boolean oneCheck = false;
-                boolean twoCheck = false;
-                boolean threeCheck = false;
-                boolean fourCheck = false;*/
-
                 try {
                     int iterations=10;
                     int numNodes = Integer.parseInt(vert.getText());
@@ -92,10 +85,8 @@ public class Window extends JPanel {
 
 
                     if (seq.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
-
-                        // if (!oneCheck && !twoCheck && !threeCheck && !fourCheck) {
-
-                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
+                        flag=false;
+                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight,flag);
                         GraphPanel graphPanel = new GraphPanel(initialGraph);
 
                         JFrame frame = new JFrame("Graph Display");
@@ -108,10 +99,9 @@ public class Window extends JPanel {
                         Computation computation = new Computation(population);
                         computation.compute();
 
-                        //}
-
-                    } else if (par.isSelected()) {
-                        // if (!oneCheck && !twoCheck && !threeCheck && !fourCheck) {
+                    } else if (par.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
+                        boolean flag = true;
+                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight,flag);
 
 
 

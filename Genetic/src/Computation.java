@@ -18,18 +18,15 @@ public class Computation {
         do
         {
             GraphPopulation newGeneration = population.selection();
-            //we need to combine and add
+
             newGeneration.addNewGraphs(newGeneration.combine());
-            //we need to mutatenewGeneration.mutation();
             newGeneration.mutation(GraphPopulation.MUTATION_PROBABILITY);
-            //need to represent each generation's best sollution based on fitness
-            // Assuming newGeneration.getPopulation() returns an ArrayList<Graph>
+
             ArrayList<Graph> best = newGeneration.getPopulation();
-
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
-
             Graph bestGraph = best.getLast();
             GraphPanel graphPanel = new GraphPanel(bestGraph);
+
             JFrame frame = new JFrame("Graph Display");
             frame.setSize(bestGraph.getW(),bestGraph.getH());
             frame.add(graphPanel);

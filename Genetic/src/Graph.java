@@ -1,6 +1,8 @@
 import javax.swing.*;
 import java.sql.Array;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.DoubleAdder;
 import java.util.stream.Collectors;
 
 import static java.awt.geom.Line2D.linesIntersect;
@@ -15,12 +17,12 @@ class Graph extends JPanel {
     int numEdges;
     public int h;
     public int w;
-
+    public boolean flag;
 
     static Random random = new Random();
 
     // constructor
-    public Graph(int n, int m, int h, int w) {
+    public Graph(int n, int m, int h, int w,boolean flag) {
         this.nodes = new ArrayList<>();
         this.edges = new ArrayList<>();
         this.lengths= new ArrayList<>();
@@ -28,6 +30,7 @@ class Graph extends JPanel {
         this.numEdges = m;
         this.h = h;
         this.w = w;
+        this.flag=flag;
         addNodes();
         addEdges();
         //minimumDistanceNeighbour();
@@ -37,7 +40,7 @@ class Graph extends JPanel {
     }
     //another constructor so it will know which one to use
     //used in the generation of the new population
-    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w)
+    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w,boolean flag)
     {
         this.nodes= new ArrayList<>(nodes);
         nodes.forEach(node -> {
@@ -50,6 +53,7 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
+        this.flag=flag;
         this.fitnessScore = fitnessEvaluation();
 
     }
@@ -76,7 +80,7 @@ class Graph extends JPanel {
 
         numNodes = nodes.size();
         numEdges = edges.size();
-
+        flag=graph.flag;
         h = graph.h;
         w = graph.w;
 
@@ -136,7 +140,7 @@ class Graph extends JPanel {
     }
 
 
-    
+
     public void addEdges() {
         for (int i = 0; i < numEdges; i++) {
             Collections.shuffle(nodes);
@@ -177,7 +181,25 @@ class Graph extends JPanel {
         }
     }
     public double minimumDistanceNeighbour(Node startNode ) {
+        // Parallel Computation
+        if(this.flag)
+        {
+            // Efficient if you have a list where iteration operations vastly outnumber mutations
+            List<Double> edgeLengths = new CopyOnWriteArrayList<>();
 
+            this.getEdges().parallelStream().forEach(edge -> {
+                Node initialNode = edge[0];
+                Node targetNode = edge[1];
+                if (startNode.equals(initialNode) || startNode.equals(targetNode)) {
+                    double edgeLength = Node.euclideanDistance(initialNode, targetNode);
+                    edgeLengths.add(edgeLength); // add the length of the newly created edge
+                }
+            });
+             return edgeLengths.isEmpty() ? Double.MAX_VALUE : Collections.min(edgeLengths);
+        }
+
+
+        // Sequential computation
         double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < this.getEdges().size(); i++) {
             Node initialNode = this.getEdges().get(i)[0];
@@ -191,6 +213,7 @@ class Graph extends JPanel {
             minDistance = Collections.min(getLengths());
         }
         return minDistance;
+
     }
 
     /*
@@ -198,14 +221,28 @@ class Graph extends JPanel {
     * near-est neighbour is measured, and the distances are added up. The bigger
     sum the more evenly the nodes are usually distributed over the
     drawing area.*/
-    /* do it like this or with the collection*/
+
     public double minimumNodeDistanceSum(Graph graph) {
+        DoubleAdder s = new DoubleAdder();
+        // Parallel Computation
+        if(this.flag)
+        {
+            this.getNodes().parallelStream().forEach(node -> {
+                double value = minimumDistanceNeighbour(node);
+                s.add(value);
+
+            });
+            return s.sum();
+        }
+        // Sequential Computation
         double sum = 0;
         for (Node node : this.getNodes()) {
             sum += minimumDistanceNeighbour(node); // do I send this or graph? And how to know which one?
             //System.out.println(sum);
         }
         return sum;
+
+
     }
     /*
      * method that traverses all the nodes and for each node it searches for the nearest neighbour node
@@ -214,14 +251,6 @@ class Graph extends JPanel {
      *
      */
 
-    /*I think I don't need this one anymore
-    public double minimumNodeDistance() {
-        double minNodeD = Double.MAX_VALUE;
-        if (!getLengths().isEmpty()) {
-            minNodeD = Collections.min(lengths);
-        }
-        return minNodeD;
-    }*/
 
     /*Edge Length Deviation: The length of each edge is measured and
     compared to the ”optimal”edge length, which is little more than
@@ -230,6 +259,9 @@ class Graph extends JPanel {
     //* calcualated as a difference between the value of the edge minus optimalEdgeLength
     public double edgeLengthDeviation(Graph graph)
     {
+        if(graph.flag){
+
+        }
         if (getLengths().isEmpty())
             return 0;
 
@@ -258,16 +290,12 @@ class Graph extends JPanel {
                 j++;
             }
             i++;
-            //count num if intersect - find the all the edges ehwre all the deges are A ,and  when one fo
-            //go trough all edges ; for each edge seach all the other edges where one of the components of the pair is present and found how many it is present ,
-            // a-> b  tak 1st and loop trough the others and check how many exist  l how many crosses you overcounted and substract
-            //geometrcak don't
+
         }
-        //System.out.println(edgeCross);
         return edgeCross;
     }
 
-    //  fintness evaluation
+    //  fitness evaluation
     public double fitnessEvaluation()
     {
         double minNodeDist = minimumNodeDistanceSum(this);
@@ -275,28 +303,8 @@ class Graph extends JPanel {
         double edgeLenDev = edgeLengthDeviation(this);
         double edgeCross = edgeCrossings();
 
-        // double wnd2 = Math.pow(getW()*getH(),2);
-        /*
-        System.out.println("----");
-        System.out.println(minNodeDist);
-        System.out.println(minNodeDist2);
-        System.out.println(edgeLenDev);
-        System.out.println(edgeCross);
-         */
-        //System.out.println(wnd2);
 
-
-        double fitness_score = 2 * minNodeDist - 2 * edgeLenDev - 2.5 * (edgeLenDev/minNodeDist - 0.25 * minNodeDist2 * numNodes - edgeCross );
-
-        //minimumNodeDistance() this is maybe redundant?
-        /*
-     double fitness_score= 2 * minimumNodeDistanceSum(this)
-                - 2 * edgeLengthDeviation(this)
-                -2.5*(edgeLengthDeviation(this)/minimumNodeDistance()
-                -0.25*(Math.pow(minimumNodeDistance(), 2.0) * numNodes)
-                -(edgeCrossings())); //increase penalty for crosses
-        ;
-        */
+        double fitness_score = 4 * minNodeDist - 2 * edgeLenDev - 5.0 * (edgeLenDev/minNodeDist - 0.25 * minNodeDist2 * numNodes - edgeCross );
 
         return fitness_score;
     }

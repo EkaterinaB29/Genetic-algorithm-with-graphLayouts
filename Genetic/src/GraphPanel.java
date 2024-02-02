@@ -12,7 +12,6 @@ class GraphPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        //g.translate(graph.getW(),graph.getH());
         super.setSize(graph.getW(),graph.getH());
 
         double edge = 50;

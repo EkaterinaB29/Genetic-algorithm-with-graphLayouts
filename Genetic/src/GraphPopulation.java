@@ -41,8 +41,7 @@ public class GraphPopulation {
     // function to create the population of graphs according to the first one
     private  void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i <  populationSize; i++) {
-            population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
-            // mutation(1);
+            population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW(),initialGraph.flag));
         }
     }
 
@@ -52,18 +51,13 @@ public class GraphPopulation {
 
     public GraphPopulation selection() {
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
-        //sort the population based on fitness score
-
-        //List<Graph> parentGraphs = new ArrayList<>();
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
         Collections.reverse(population);
 
         List<Graph> parentGraphs = new ArrayList<>(population.subList(0,population.size()/2));
 
         for (Graph g : parentGraphs) {
-            // idea create copies of the best graphs to fill the bound for populationSize
-            Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
-            // add the copies to ArrayList
+            Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW(),g.flag);
             selectedGraphs.add(copyGraph);
         }
         return new GraphPopulation(selectedGraphs,populationSize,panel);
@@ -78,7 +72,7 @@ public class GraphPopulation {
         return this;
     }
 
-    /*two parents- graph reproduce and create 2 children*/
+    /*two parents-graph reproduce and create 2 children*/
     public ArrayList<Graph> combine() {
         Graph parent1;
         Graph parent2;
@@ -123,8 +117,8 @@ public class GraphPopulation {
                 secondchildEdges.add(new Node[] {secondOrigin,secondDestination});
             });
 
-            children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW()));
-            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW()));
+            children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW(),parent1.flag));
+            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW(),parent1.flag));
         }
         return children;
     }
