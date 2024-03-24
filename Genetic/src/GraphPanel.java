@@ -1,11 +1,11 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.Random;
 
 class GraphPanel extends JPanel {
     private Graph graph;
     public GraphPanel(Graph graph) {
         this.graph = graph;
+
     }
 
 
@@ -65,4 +65,6 @@ class GraphPanel extends JPanel {
     }
 
 
+    public void setGraph(Graph bestGraph) {
+    }
 }

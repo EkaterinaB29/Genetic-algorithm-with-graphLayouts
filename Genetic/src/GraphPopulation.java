@@ -1,7 +1,4 @@
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.lang.Math.min;
 
 public class GraphPopulation {
     static Random random = new Random();

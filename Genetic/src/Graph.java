@@ -1,9 +1,7 @@
 import javax.swing.*;
-import java.sql.Array;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.DoubleAdder;
-import java.util.stream.Collectors;
 
 import static java.awt.geom.Line2D.linesIntersect;
 

@@ -1,12 +1,14 @@
 import javax.swing.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class Computation {
     public  GraphPopulation population;
     //
     // to visualize after each iteration the graph with best fitness_score
     long t0 = System.currentTimeMillis();
-    static int iterations= 10;
+    static int iterations= 20;
 
 
     public Computation(GraphPopulation population)
@@ -15,16 +17,18 @@ public class Computation {
     }
     public void compute()
     {
+
         do
         {
-            GraphPopulation newGeneration = population.selection();
+            population = population.selection();
 
-            newGeneration.addNewGraphs(newGeneration.combine());
-            newGeneration.mutation(GraphPopulation.MUTATION_PROBABILITY);
+            population.addNewGraphs(population.combine());
+            population.mutation(GraphPopulation.MUTATION_PROBABILITY);
 
-            ArrayList<Graph> best = newGeneration.getPopulation();
+            ArrayList<Graph> best = population.getPopulation();
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
-            Graph bestGraph = best.getLast();
+            Collections.reverse(population.getPopulation());
+            Graph bestGraph = best.getFirst();
             GraphPanel graphPanel = new GraphPanel(bestGraph);
 
             JFrame frame = new JFrame("Graph Display");
@@ -34,6 +38,8 @@ public class Computation {
             frame.setVisible(true);
             iterations--;
         }while(iterations>0);
+
+
         long t = System.currentTimeMillis();
         long time = t-t0;
         JFrame f = new JFrame();
