@@ -38,11 +38,15 @@ public class GraphPopulation {
     // function to create the population of graphs according to the first one
     private  void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i <  populationSize; i++) {
-            population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW(),initialGraph.flag));
+            population.add(new Graph(initialGraph.nodes,initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
         }
     }
 
     public void fitnessScoreEvaluate(ArrayList<Graph> population) {
+        population.parallelStream().forEach(Graph::fitnessEvaluation);
+        for (Graph graph : population) {
+            graph.fitnessEvaluation(); // Assuming this method calculates and sets the fitness score in the Graph object
+        }
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
     }
 
@@ -54,7 +58,7 @@ public class GraphPopulation {
         List<Graph> parentGraphs = new ArrayList<>(population.subList(0,population.size()/2));
 
         for (Graph g : parentGraphs) {
-            Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW(),g.flag);
+            Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
             selectedGraphs.add(copyGraph);
         }
         return new GraphPopulation(selectedGraphs,populationSize,panel);
@@ -114,8 +118,8 @@ public class GraphPopulation {
                 secondchildEdges.add(new Node[] {secondOrigin,secondDestination});
             });
 
-            children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW(),parent1.flag));
-            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW(),parent1.flag));
+            children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW()));
+            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW()));
         }
         return children;
     }

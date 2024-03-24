@@ -8,7 +8,6 @@ import java.awt.event.ActionListener;
 public class Window extends JPanel {
 
      public static int p =100;
-     boolean flag = true;
        JFrame frame = new JFrame("Choose initial values!");
 
     public Window() {
@@ -85,25 +84,27 @@ public class Window extends JPanel {
 
 
                     if (seq.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
-                        flag=false;
-                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight,flag);
+                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
                         GraphPanel graphPanel = new GraphPanel(initialGraph);
-
+                        /**
+                         * ---- in case we want to show the initial graph ----
+                         *
                         JFrame frame = new JFrame("Graph Display");
                         frame.setSize(windowWidth, windowHeight);
                         frame.add(graphPanel);
                         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                         frame.setVisible(true);
-
+                        **/
                         GraphPopulation population = new GraphPopulation(initialGraph,p,graphPanel);
                         Computation computation = new Computation(population);
                         computation.compute();
 
                     } else if (par.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
-                        boolean flag = true;
-                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight,flag);
-
-
+                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
+                        GraphPanel graphPanel = new GraphPanel(initialGraph);
+                        ParallelGraphPopulation populationParallel = new ParallelGraphPopulation(initialGraph,p,graphPanel);
+                        ParallelComputation parallelComputation = new ParallelComputation(populationParallel);
+                        parallelComputation.compute();
 
                     }
                 } catch (NumberFormatException ex) {

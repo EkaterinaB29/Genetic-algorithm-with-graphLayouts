@@ -8,7 +8,7 @@ public class Computation {
     //
     // to visualize after each iteration the graph with best fitness_score
     long t0 = System.currentTimeMillis();
-    static int iterations= 20;
+    static int iterations= 1;
 
 
     public Computation(GraphPopulation population)
@@ -22,10 +22,10 @@ public class Computation {
         {
             population = population.selection();
 
-            population.addNewGraphs(population.combine());
-            population.mutation(GraphPopulation.MUTATION_PROBABILITY);
+           // population.addNewGraphs(population.combine());
+           // population.mutation(GraphPopulation.MUTATION_PROBABILITY);
 
-            ArrayList<Graph> best = population.getPopulation();
+           /* ArrayList<Graph> best = population.getPopulation();
             Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
             Collections.reverse(population.getPopulation());
             Graph bestGraph = best.getFirst();
@@ -36,6 +36,22 @@ public class Computation {
             frame.add(graphPanel);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
+
+            */
+            ArrayList<Graph> best = population.getPopulation();
+            // Collections.sort(best, Comparator.comparingDouble(Graph::getFitnessScore));
+            // Collections.reverse(population.getPopulation());
+            // Graph bestGraph = best.get(best.size() - 1);
+            for (int i = 0; i < best.size(); i++) {
+                GraphPanel graphPanel = new GraphPanel(best.get(i));
+                JFrame frame = new JFrame("Graph Display");
+                frame.setSize(best.get(i).getW(), best.get(i).getH());
+                frame.add(graphPanel);
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setVisible(true);
+
+            }
+
             iterations--;
         }while(iterations>0);
 

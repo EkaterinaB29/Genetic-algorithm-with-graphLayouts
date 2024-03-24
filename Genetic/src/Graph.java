@@ -20,7 +20,7 @@ class Graph extends JPanel {
     static Random random = new Random();
 
     // constructor
-    public Graph(int n, int m, int h, int w,boolean flag) {
+    public Graph(int n, int m, int h, int w) {
         this.nodes = new ArrayList<>();
         this.edges = new ArrayList<>();
         this.lengths= new ArrayList<>();
@@ -28,7 +28,6 @@ class Graph extends JPanel {
         this.numEdges = m;
         this.h = h;
         this.w = w;
-        this.flag=flag;
         addNodes();
         addEdges();
         //minimumDistanceNeighbour();
@@ -38,11 +37,11 @@ class Graph extends JPanel {
     }
     //another constructor so it will know which one to use
     //used in the generation of the new population
-    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w,boolean flag)
+    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w)
     {
         this.nodes= new ArrayList<>(nodes);
         nodes.forEach(node -> {
-            node.x += random.nextInt(-1,1) * random.nextInt(4);  // this I am not sure if it is okay?
+            node.x += random.nextInt(-1,1) * random.nextInt(4);
             node.y += random.nextInt(-1,1) * random.nextInt(4);
         });
         this.edges= edges;
@@ -51,36 +50,34 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        this.flag=flag;
         this.fitnessScore = fitnessEvaluation();
 
     }
 
     /* A copy constructor. */
 
-    public Graph(Graph graph)
+    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w, Graph graph)
     {
-        nodes = new ArrayList<Node>();
+        this.nodes = new ArrayList<Node>();
         for (Node node : graph.nodes) {
-            nodes.add(new Node(node));
+            this.nodes.add(new Node(node));
         }
 
-        edges = new ArrayList<Node[]>();
+        this.edges = new ArrayList<Node[]>();
         for (Node[] edge : graph.edges) {
             Node node0 = getNodeId(edge[0].getId());
             Node node1 = getNodeId(edge[1].getId());
             Node[] newEdge = {node0, node1};
-            edges.add(newEdge);
+            this.edges.add(newEdge);
         }
 
         lengths = new ArrayList<Double>();
         lengths.addAll(graph.lengths);
 
-        numNodes = nodes.size();
-        numEdges = edges.size();
-        flag=graph.flag;
-        h = graph.h;
-        w = graph.w;
+        numNodes = this.nodes.size();
+        numEdges = this.edges.size();
+        this.h = graph.h;
+        this.w = graph.w;
 
         fitnessScore = graph.fitnessScore;
         currentIndex = graph.currentIndex;
@@ -306,6 +303,7 @@ class Graph extends JPanel {
 
         return fitness_score;
     }
+
 
     //mutation on a single Node
 
