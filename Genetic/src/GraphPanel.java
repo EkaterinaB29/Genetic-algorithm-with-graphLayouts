@@ -15,8 +15,8 @@ class GraphPanel extends JPanel {
         super.setSize(graph.getW(),graph.getH());
 
         double edge = 50;
-        double minx = graph.getNodes().get(0).x;
-        double miny = graph.getNodes().get(0).y;
+        double minx = graph.getNodes().getFirst().x;
+        double miny = graph.getNodes().getFirst().y;
         double maxx = minx;
         double maxy = miny;
         for (Node node : graph.getNodes()) {
@@ -26,23 +26,23 @@ class GraphPanel extends JPanel {
             if (node.getY() < miny) miny = node.getY();
         }
 
-        double scalex = graph.getW() / (maxx - minx + 2*edge);
-        double scaley = graph.getH() / (maxy - miny + 2*edge);
-        double offsetx = -minx + edge;
-        double offsety = -miny + edge;
+        double scaleX = graph.getW() / (maxx - minx + 2*edge);
+        double scaleY = graph.getH() / (maxy - miny + 2*edge);
+        double offsetX = -minx + edge;
+        double offsetY = -miny + edge;
 
         // Draw edges
         g.setColor(Color.blue);
         int i = 0;
 
         while (i < graph.getEdges().size()) {
-            Node start = graph.getEdges().get(i)[0];
-            Node end = graph.getEdges().get(i)[1];
+            Node start = graph.getEdges().get(i).getOrigin();
+            Node end = graph.getEdges().get(i).getDestination();
 
-            int x = (int) (scalex * (start.getX() + offsetx));
-            int y = (int) (scaley * (start.getY() + offsety));
-            int width = (int) (scalex * (end.getX() + offsetx));
-            int height = (int) (scaley * (end.getY() + offsety));
+            int x = (int) (scaleX * (start.getX() + offsetX));
+            int y = (int) (scaleY * (start.getY() + offsetY));
+            int width = (int) (scaleX * (end.getX() + offsetX));
+            int height = (int) (scaleY * (end.getY() + offsetY));
             g.drawLine(x, y, width, height);
             i++;
         }
@@ -51,8 +51,8 @@ class GraphPanel extends JPanel {
 
         g.setColor(Color.red);
         for (Node node : graph.getNodes()) {
-            double x = scalex * (node.getX() + offsetx);
-            double y = scaley * (node.getY() + offsety);
+            double x = scaleX * (node.getX() + offsetX);
+            double y = scaleY * (node.getY() + offsetY);
 
             g.fillOval((int) x-5, (int) y-5, 15, 15);
             g.drawString(""+node.id,(int) x-5, (int) y-5);

@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.stream.IntStream;
 
 import static java.awt.geom.Line2D.linesIntersect;
 
@@ -9,13 +10,12 @@ import static java.awt.geom.Line2D.linesIntersect;
 class Graph extends JPanel {
     public double fitnessScore;
     ArrayList<Node> nodes;
-    ArrayList<Node[]> edges;
+    ArrayList<Edge> edges;
     ArrayList<Double> lengths;
     int numNodes;
     int numEdges;
     public int h;
     public int w;
-    public boolean flag;
 
     static Random random = new Random();
 
@@ -37,7 +37,7 @@ class Graph extends JPanel {
     }
     //another constructor so it will know which one to use
     //used in the generation of the new population
-    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w)
+    public Graph(ArrayList<Node> nodes, ArrayList<Edge> edges, int h, int w)
     {
         this.nodes= new ArrayList<>(nodes);
         nodes.forEach(node -> {
@@ -56,18 +56,18 @@ class Graph extends JPanel {
 
     /* A copy constructor. */
 
-    public Graph(ArrayList<Node> nodes, ArrayList<Node[]> edges, int h, int w, Graph graph)
+    public Graph(ArrayList<Node> nodes, ArrayList<Edge> edges, int h, int w, Graph graph)
     {
         this.nodes = new ArrayList<Node>();
         for (Node node : graph.nodes) {
             this.nodes.add(new Node(node));
         }
 
-        this.edges = new ArrayList<Node[]>();
-        for (Node[] edge : graph.edges) {
-            Node node0 = getNodeId(edge[0].getId());
-            Node node1 = getNodeId(edge[1].getId());
-            Node[] newEdge = {node0, node1};
+        this.edges = new ArrayList<Edge>();
+        for (Edge edge : graph.edges) {
+            Node node0 = getNodeId(edge.getOrigin().getId());
+            Node node1 = getNodeId(edge.getDestination().getId());
+            Edge newEdge = new Edge(node0, node1);
             this.edges.add(newEdge);
         }
 
@@ -89,7 +89,7 @@ class Graph extends JPanel {
     }
     public ArrayList<Double> getLengths() {
         return lengths;}
-    public ArrayList<Node[]> getEdges() {
+    public ArrayList<Edge> getEdges() {
         return edges;
     }
     public int getW() {
@@ -134,27 +134,17 @@ class Graph extends JPanel {
         }
     }
 
-
-
     public void addEdges() {
         for (int i = 0; i < numEdges; i++) {
             Collections.shuffle(nodes);
             Node sourceNode = nodes.getFirst();
             Node destinationNode = nodes.stream().filter(node -> node!=sourceNode).toList().getFirst();
-            Node[] pair = {sourceNode, destinationNode};
+            Edge pair = new Edge(sourceNode, destinationNode);
             edges.add(pair);
         }
     }
 
-    public boolean containsEdge(Node[] edge) {
-        for (Node[] existingEdge : edges) {
-            if ((existingEdge[0] == edge[0] && existingEdge[1] == edge[1]) ||
-                    (existingEdge[0] == edge[1] && existingEdge[1] == edge[0])) {
-                return true;
-            }
-        }
-        return false;
-    }
+
     //  Method to get a random Node
     public Node getRandomNode() {
         int randomIndex = random.nextInt(getNodes().size());
@@ -163,47 +153,15 @@ class Graph extends JPanel {
 
     private int currentIndex = 0;
 
-    public Node getSequentialNode() {
-        // Ensure that currentIndex is within the bounds of the list
-        if ( !getNodes().isEmpty() && currentIndex < getNodes().size()) {
-            Node node = getNodes().get(currentIndex);
-            currentIndex++;
-            return node;
-        } else {
-            // Reset currentIndex to 0 when all nodes have been traversed
-            currentIndex = 0;
-            return getNodes().get(0); //
-        }
-    }
+
     public double minimumDistanceNeighbour(Node startNode ) {
-        // Parallel Computation
-        if(this.flag)
-        {
-            // Efficient if you have a list where iteration operations vastly outnumber mutations
-            List<Double> edgeLengths = new CopyOnWriteArrayList<>();
-
-            this.getEdges().parallelStream().forEach(edge -> {
-                Node initialNode = edge[0];
-                Node targetNode = edge[1];
-                if (startNode.equals(initialNode) || startNode.equals(targetNode)) {
-                    double edgeLength = Node.euclideanDistance(initialNode, targetNode);
-                    edgeLengths.add(edgeLength); // add the length of the newly created edge
-                }
-            });
-             return edgeLengths.isEmpty() ? Double.MAX_VALUE : Collections.min(edgeLengths);
-        }
-
-
-        // Sequential computation
         double minDistance = Double.MAX_VALUE;
-        for (int i = 0; i < this.getEdges().size(); i++) {
-            Node initialNode = this.getEdges().get(i)[0];
-            Node targetNode = this.getEdges().get(i)[1];
-            if (startNode == initialNode || startNode == targetNode) {
-                double edgeLength = Node.euclideanDistance(initialNode, targetNode);
+        this.edges.forEach(edge -> {
+            if (edge.origin == startNode || edge.destination == startNode) {
+                double edgeLength = Node.euclideanDistance(edge.origin, edge.destination);
                 getLengths().add(edgeLength); // add the length of the newly created edge
             }
-        }
+        });
         if (!getLengths().isEmpty()) {
             minDistance = Collections.min(getLengths());
         }
@@ -218,51 +176,27 @@ class Graph extends JPanel {
     drawing area.*/
 
     public double minimumNodeDistanceSum(Graph graph) {
-        DoubleAdder s = new DoubleAdder();
-        // Parallel Computation
-        if(this.flag)
-        {
-            this.getNodes().parallelStream().forEach(node -> {
-                double value = minimumDistanceNeighbour(node);
-                s.add(value);
-
-            });
-            return s.sum();
-        }
-        // Sequential Computation
         double sum = 0;
         for (Node node : this.getNodes()) {
-            sum += minimumDistanceNeighbour(node); // do I send this or graph? And how to know which one?
-            //System.out.println(sum);
+            sum += minimumDistanceNeighbour(node);
+
         }
         return sum;
-
-
     }
-    /*
-     * method that traverses all the nodes and for each node it searches for the nearest neighbour node
-     * at the end we have the smallest distance between two nodes overall the graph then calculates by
-     * Minimum Node Distance = (Number of Nodes × (Minimum Node Distance)^2)
-     *
-     */
-
 
     /*Edge Length Deviation: The length of each edge is measured and
     compared to the ”optimal”edge length, which is little more than
-    the mini-mum edge length found from the present layout.*/
+    the minimum edge length found from the present layout.*/
     ///*assuming here that the true value is the optimal value so the deviation will be
-    //* calcualated as a difference between the value of the edge minus optimalEdgeLength
-    public double edgeLengthDeviation(Graph graph)
+    //* calculated as a difference between the value of the edge minus optimalEdgeLength
+    public double edgeLengthDeviation()
     {
-        if(graph.flag){
-
-        }
         if (getLengths().isEmpty())
             return 0;
 
-        double optimalEdgeLength =Collections.min(lengths)+5;
+        double optimalEdgeLength =Collections.min(this.lengths)+5; //TODO CHECK THIS WHEN TESTING SHOULD BE MODIFIED!!!
         double sum=0;
-        Iterator<Double> iterator = lengths.iterator();
+        Iterator<Double> iterator = this.lengths.iterator();
         while (iterator.hasNext()) {
             double d = iterator.next() - optimalEdgeLength;
             sum+= Math.pow(d,2);
@@ -272,14 +206,17 @@ class Graph extends JPanel {
     }
 
     // Method that counts edge crossings
-    public int edgeCrossings() {
+
+   public int edgeCrossings() {
         int edgeCross = 0;
         int i = 0;
         while (i < this.getEdges().size() -1) {
             //  first edge - first pair
+            Edge edge1 = edges.get(i);
             int j = i + 1;
             while (j < this.getEdges().size()) {
-                if (linesIntersect(this.getEdges().get(i)[0].x, this.getEdges().get(i)[0].y, this.getEdges().get(i)[1].x, this.getEdges().get(i)[1].y,this.getEdges().get(j)[0].x,this.getEdges().get(j)[0].y, this.getEdges().get(j)[1].x, this.getEdges().get(j)[1].y)) {
+                Edge edge2 = edges.get(j);
+                if (edge1.intersects(edge2)){
                     edgeCross++;
                 }
                 j++;
@@ -290,12 +227,23 @@ class Graph extends JPanel {
         return edgeCross;
     }
 
+    public int edgeCrossings1() {
+        List<Edge> edges = this.getEdges(); // Assuming getEdges() returns List<Edge>
+
+        return (int) IntStream.range(0, edges.size() - 1)
+                .flatMap(i ->
+                        IntStream.range(i + 1, edges.size())
+                                .filter(j -> edges.get(i).intersects(edges.get(j))))
+                .count();
+    }
+
+
     //  fitness evaluation
     public double fitnessEvaluation()
     {
         double minNodeDist = minimumNodeDistanceSum(this);
         double minNodeDist2 = Math.pow(minNodeDist, 2.0);
-        double edgeLenDev = edgeLengthDeviation(this);
+        double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
 
 
@@ -306,23 +254,46 @@ class Graph extends JPanel {
 
 
     //mutation on a single Node
-
-    public Graph mutation() {
-        Node random_node = this.getRandomNode();
+/***
+    public Graph mutationold() {
+        Node randomNode = this.getRandomNode();
         for ( int i=0 ; i < edges.size(); i++) {
             double angle=random.nextDouble(180);
-            if( this.edges.get(i)[0] == random_node || random_node == this.edges.get(i)[1])
+            if( this.edges.get(i).origin == randomNode || randomNode == this.edges.get(i).destination)
             {
                 //get the pair [random_node, some other_node]
-                double radius = Node.euclideanDistance(this.edges.get(i)[0],this.edges.get(i)[1]);
-                double newX = (radius * Math.cos( angle * Math.PI / 180)) + (random_node.x);
-                double newY = (radius * Math.sin(angle* Math.PI / 180)) + (random_node.y);
-                Node.moveNode(random_node, newX,newY);
+                double radius = Node.euclideanDistance(this.edges.get(i).origin,this.edges.get(i).destination);
+                double newX = (radius * Math.cos( angle * Math.PI / 180)) + (randomNode.x);
+                double newY = (radius * Math.sin(angle* Math.PI / 180)) + (randomNode.y);
+                Node.moveNode(randomNode, newX,newY);
             }
         }
         this.fitnessScore = fitnessEvaluation();
         return this;
     }
+ ***/
+    public Graph mutation() {
+        Node randomNode = this.getRandomNode();
+        double angle = random.nextDouble() * 180; //random angle
+
+        // Go edges to find those connected to the randomNode and apply mutation
+        edges.stream()
+                .filter(edge -> edge.getOrigin() == randomNode || edge.getDestination() == randomNode)
+                .forEach(edge -> {
+                    Node connectedNode = edge.getOrigin()== randomNode ? edge.getDestination() : edge.getOrigin();
+                    // if it is the origin node, then find the destination
+                    // if it was the destination random node chosen then give its origin mate
+                    double radius = Node.euclideanDistance(randomNode, connectedNode);
+                    double newX = (radius * Math.cos(angle * Math.PI / 180)) + randomNode.getX();
+                    double newY = (radius * Math.sin(angle * Math.PI / 180)) + randomNode.getY();
+                    Node.moveNode(randomNode, newX,newY);
+
+                });
+
+        this.fitnessScore = fitnessEvaluation(); // Re-evaluate the fitness score after mutation
+        return this;
+    }
+
 
 
 }

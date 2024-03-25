@@ -43,7 +43,7 @@ public class GraphPopulation {
     }
 
     public void fitnessScoreEvaluate(ArrayList<Graph> population) {
-        population.parallelStream().forEach(Graph::fitnessEvaluation);
+
         for (Graph graph : population) {
             graph.fitnessEvaluation(); // Assuming this method calculates and sets the fitness score in the Graph object
         }
@@ -82,17 +82,18 @@ public class GraphPopulation {
             parent1 = this.getPopulation().get(i);
             parent2 = this.getPopulation().get(i+1);
             ArrayList<Node> nodesParent1= parent1.getNodes();
-            ArrayList<Node[]> edgesParent1 = parent1.getEdges();
+            ArrayList<Edge> edgesParent1 = parent1.getEdges();
             ArrayList<Node> nodesParent2= parent2.getNodes();
-            ArrayList<Node[]> edgesParent2 = parent2.getEdges();
+            ArrayList<Edge> edgesParent2 = parent2.getEdges();
 
             nodesParent1.sort(Comparator.comparingInt(Node::getId));
             nodesParent2.sort(Comparator.comparingInt(Node::getId));
+
             ArrayList<Node> firstChildNodes= new ArrayList<>();
-            ArrayList<Node []> firstChildEdges= new ArrayList<>();
+            ArrayList<Edge> firstChildEdges= new ArrayList<>();
 
             ArrayList<Node> secondChildNodes= new ArrayList<>();
-            ArrayList<Node []> secondchildEdges= new ArrayList<>();
+            ArrayList<Edge> secondChildEdges= new ArrayList<>();
 
 
             int separator= random.nextInt(nodesParent2.size()); //so we always have a bound
@@ -109,21 +110,20 @@ public class GraphPopulation {
                 }
             }
             edgesParent2.forEach(nodes -> {
-                Node firstOrigin = firstChildNodes.stream().filter(node -> node.id == nodes[0].id).toList().getFirst();
-                Node firstDestination = firstChildNodes.stream().filter(node -> node.id == nodes[1].id).toList().getFirst();
-                firstChildEdges.add(new Node[] {firstOrigin,firstDestination});
-
-                Node secondOrigin = secondChildNodes.stream().filter(node -> node.id == nodes[0].id).toList().getFirst();
-                Node secondDestination = secondChildNodes.stream().filter(node -> node.id == nodes[1].id).toList().getFirst();
-                secondchildEdges.add(new Node[] {secondOrigin,secondDestination});
+                connectEdge(firstChildNodes, firstChildEdges, nodes);
+                connectEdge(secondChildNodes, secondChildEdges, nodes);
             });
-
             children.add(new Graph(firstChildNodes, firstChildEdges,parent1.getH(),parent1.getW()));
-            children.add(new Graph(secondChildNodes, secondchildEdges,parent1.getH(),parent1.getW()));
+            children.add(new Graph(secondChildNodes, secondChildEdges,parent1.getH(),parent1.getW()));
         }
         return children;
     }
 
+    private void connectEdge(ArrayList<Node> firstChildNodes, ArrayList<Edge> firstChildEdges, Edge nodes) {
+        Node firstOrigin = firstChildNodes.stream().filter(node -> node.id == nodes.origin.id).toList().getFirst();
+        Node firstDestination = firstChildNodes.stream().filter(node -> node.id == nodes.destination.id).toList().getFirst();
+        firstChildEdges.add(new Edge(firstOrigin,firstDestination));
+    }
 
 
     public GraphPopulation mutation(double mutationRate)
@@ -137,17 +137,6 @@ public class GraphPopulation {
         }
         return this;
 
-    }
-    public Graph getGraph(double f)
-    {
-        int index = 0;
-        for (int i = 0; i <population.size() ; i++) {
-            if (population.get(i).fitnessScore == f)
-            {
-                index=i;
-            }
-        }
-        return population.get(index);
     }
 
 

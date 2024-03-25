@@ -102,9 +102,9 @@ public class Window extends JPanel {
                     } else if (par.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
                         Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
                         GraphPanel graphPanel = new GraphPanel(initialGraph);
-                        ParallelGraphPopulation populationParallel = new ParallelGraphPopulation(initialGraph,p,graphPanel);
+                       /** ParallelGraphPopulation populationParallel = new ParallelGraphPopulation(initialGraph,p,graphPanel);
                         ParallelComputation parallelComputation = new ParallelComputation(populationParallel);
-                        parallelComputation.compute();
+                        parallelComputation.compute();**/
 
                     }
                 } catch (NumberFormatException ex) {
