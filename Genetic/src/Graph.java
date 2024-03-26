@@ -207,8 +207,8 @@ class Graph extends JPanel {
 
     // Method that counts edge crossings
 
-   public int edgeCrossings() {
-        int edgeCross = 0;
+   public double edgeCrossings() {
+        double edgeCross = 0;
         int i = 0;
         while (i < this.getEdges().size() -1) {
             //  first edge - first pair
@@ -246,6 +246,8 @@ class Graph extends JPanel {
         double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
 
+        if (minNodeDist == 0)
+            return Double.MIN_VALUE;
 
         double fitness_score = 4 * minNodeDist - 2 * edgeLenDev - 5.0 * (edgeLenDev/minNodeDist - 0.25 * minNodeDist2 * numNodes - edgeCross );
 

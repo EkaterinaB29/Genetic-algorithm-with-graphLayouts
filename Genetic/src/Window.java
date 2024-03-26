@@ -7,7 +7,7 @@ import java.awt.event.ActionListener;
 
 public class Window extends JPanel {
 
-     public static int p =100;
+     public static int p =1000;
        JFrame frame = new JFrame("Choose initial values!");
 
     public Window() {
@@ -76,16 +76,20 @@ public class Window extends JPanel {
             public void actionPerformed(ActionEvent e) {
 
                 try {
-                    int iterations=10;
+
                     int numNodes = Integer.parseInt(vert.getText());
                     int numEdges = Integer.parseInt(edg.getText());
                     int windowHeight = Integer.parseInt(h.getText());
                     int windowWidth = Integer.parseInt(w.getText());
 
 
+                    Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
+                    GraphPanel graphPanel = new GraphPanel(initialGraph);
+
                     if (seq.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
-                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
-                        GraphPanel graphPanel = new GraphPanel(initialGraph);
+                        GraphPopulation populationSequntial = new GraphPopulation(initialGraph,p,graphPanel,1);
+                        Thread thread = new Thread(populationSequntial); // Create a new thread with your GraphPopulation instance
+                        thread.start();
                         /**
                          * ---- in case we want to show the initial graph ----
                          *
@@ -95,16 +99,17 @@ public class Window extends JPanel {
                         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                         frame.setVisible(true);
                         **/
-                        GraphPopulation population = new GraphPopulation(initialGraph,p,graphPanel);
-                        Computation computation = new Computation(population);
+
+                        Computation computation = new Computation(populationSequntial);
                         computation.compute();
 
                     } else if (par.isSelected() && numNodes > 0 && numEdges <= (numNodes * (numNodes - 1)) / 2 && numEdges >= numNodes-1 && windowWidth > 0 && windowHeight > 0) {
-                        Graph initialGraph = new Graph(numNodes,numEdges,windowWidth,windowHeight);
-                        GraphPanel graphPanel = new GraphPanel(initialGraph);
-                       /** ParallelGraphPopulation populationParallel = new ParallelGraphPopulation(initialGraph,p,graphPanel);
-                        ParallelComputation parallelComputation = new ParallelComputation(populationParallel);
-                        parallelComputation.compute();**/
+                       GraphPopulation populationParallel = new GraphPopulation(initialGraph,p,graphPanel,Runtime.getRuntime().availableProcessors());
+                        Thread thread = new Thread(populationParallel); // Create a new thread with your GraphPopulation instance
+                        thread.start();
+                        Computation computation2 = new Computation(populationParallel);
+                        computation2.compute();
+
 
                     }
                 } catch (NumberFormatException ex) {

@@ -1,25 +1,37 @@
 import java.util.*;
+import java.util.concurrent.*;
 
-public class GraphPopulation {
+public class GraphPopulation implements Runnable{
     static Random random = new Random();
     ArrayList<Graph> population = new ArrayList<>();
     static final double MUTATION_PROBABILITY = 0.001;
     public Graph initialGraph;
     public GraphPanel panel;
-    public int populationSize;
+    private final int populationSize;
+    private final CyclicBarrier barrier;
 
-    public GraphPopulation(Graph initialGraph,int populationSize, GraphPanel panel) {
+   int processorCount;
+    private  ExecutorService executor;
 
+    public GraphPopulation(Graph initialGraph,int populationSize, GraphPanel panel, int processorCount) {
+        this.processorCount = processorCount;
         this.populationSize = populationSize;
+        this.barrier = new CyclicBarrier(populationSize+1 );
+        executor = Executors.newFixedThreadPool(processorCount);
+
         initialGraphPopulation(initialGraph);
-        fitnessScoreEvaluate(population);
+        //fitnessScoreEvaluate(population);
 
     }
-    public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel)
+    public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel,int processorCount)
     {
-        this.populationSize = populationSize;
         this.population = selectedIndividuals;
-        fitnessScoreEvaluate(population); //
+        this.processorCount = processorCount;
+        this.populationSize = populationSize;
+        this.barrier = new CyclicBarrier(populationSize+1 );
+        executor = Executors.newFixedThreadPool(processorCount);
+
+        //fitnessScoreEvaluate(population); //
 
     }
 
@@ -43,9 +55,8 @@ public class GraphPopulation {
     }
 
     public void fitnessScoreEvaluate(ArrayList<Graph> population) {
-
-        for (Graph graph : population) {
-            graph.fitnessEvaluation(); // Assuming this method calculates and sets the fitness score in the Graph object
+        for (Graph g : population) {
+            g.fitnessEvaluation();
         }
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
     }
@@ -61,7 +72,7 @@ public class GraphPopulation {
             Graph copyGraph = new Graph(g.getNodes(),g.getEdges(),g.getH(),g.getW());
             selectedGraphs.add(copyGraph);
         }
-        return new GraphPopulation(selectedGraphs,populationSize,panel);
+        return new GraphPopulation(selectedGraphs,populationSize,panel,processorCount);
     }
     public Graph getInitialGraph() {
         return initialGraph;
@@ -138,6 +149,49 @@ public class GraphPopulation {
         return this;
 
     }
+
+
+    @Override
+    public void run() {
+        try {
+            // Submit tasks for fitness evaluation to the executor service
+            for (Graph graph : this.population) {
+                executor.submit(() -> {
+                    System.out.println("Thread " + Thread.currentThread().getName() + " is evaluating fitness...");
+                    graph.fitnessEvaluation(); // Perform the fitness evaluation
+                    try {
+                        barrier.await(); // Wait for all tasks to reach this point
+                    } catch (InterruptedException | BrokenBarrierException e) {
+                        Thread.currentThread().interrupt(); // Set the interrupt flag
+                        System.err.println("Error waiting at the barrier: " + e.getMessage());
+                    }
+                });
+            }
+
+            // Wait for all submitted tasks to reach the barrier, including this run() execution
+            barrier.await();
+
+        } catch (InterruptedException | BrokenBarrierException e) {
+            Thread.currentThread().interrupt(); // Set the interrupt flag
+            System.err.println("Run method's thread was interrupted or broken barrier: " + e.getMessage());
+        } finally {
+            // Ensure all tasks are done before shutting down the executor
+            System.out.println("Shutting down the executor service...");
+            executor.shutdown();
+            try {
+                // Wait for currently executing tasks to complete
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow(); // Forcefully shutdown if tasks did not complete in time
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow(); // Ensure shutdown if current thread is interrupted
+                Thread.currentThread().interrupt(); // Preserve interrupt status
+            }
+        }
+    }
+
+
+
 
 
 }
