@@ -227,15 +227,6 @@ class Graph extends JPanel {
         return edgeCross;
     }
 
-    public int edgeCrossings1() {
-        List<Edge> edges = this.getEdges(); // Assuming getEdges() returns List<Edge>
-
-        return (int) IntStream.range(0, edges.size() - 1)
-                .flatMap(i ->
-                        IntStream.range(i + 1, edges.size())
-                                .filter(j -> edges.get(i).intersects(edges.get(j))))
-                .count();
-    }
 
 
     //  fitness evaluation

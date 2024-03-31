@@ -7,18 +7,16 @@ public class GraphPopulation implements Runnable{
     static final double MUTATION_PROBABILITY = 0.001;
     public Graph initialGraph;
     public GraphPanel panel;
-    private final int populationSize;
-    private final CyclicBarrier barrier;
+    private int populationSize;
+    //private CyclicBarrier barrier;
 
    int processorCount;
-    private  ExecutorService executor;
+   private  ExecutorService executor;
 
     public GraphPopulation(Graph initialGraph,int populationSize, GraphPanel panel, int processorCount) {
         this.processorCount = processorCount;
         this.populationSize = populationSize;
-        this.barrier = new CyclicBarrier(populationSize+1 );
-        executor = Executors.newFixedThreadPool(processorCount);
-
+        //executor = Executors.newFixedThreadPool(processorCount);
         initialGraphPopulation(initialGraph);
         //fitnessScoreEvaluate(population);
 
@@ -28,8 +26,8 @@ public class GraphPopulation implements Runnable{
         this.population = selectedIndividuals;
         this.processorCount = processorCount;
         this.populationSize = populationSize;
-        this.barrier = new CyclicBarrier(populationSize+1 );
-        executor = Executors.newFixedThreadPool(processorCount);
+        //this.barrier = new CyclicBarrier(populationSize+1 ); //
+        //executor = Executors.newFixedThreadPool(processorCount);
 
         //fitnessScoreEvaluate(population); //
 
@@ -58,7 +56,7 @@ public class GraphPopulation implements Runnable{
         for (Graph g : population) {
             g.fitnessEvaluation();
         }
-        population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
+        population.sort(Comparator.comparingDouble(Graph::getFitnessScore)); // todo redundant
     }
 
     public GraphPopulation selection() {
@@ -89,6 +87,8 @@ public class GraphPopulation implements Runnable{
         Graph parent1;
         Graph parent2;
         ArrayList<Graph> children = new ArrayList<>();
+
+
         for (int i = 0; i < population.size(); i+=2) {
             parent1 = this.getPopulation().get(i);
             parent2 = this.getPopulation().get(i+1);
@@ -151,46 +151,60 @@ public class GraphPopulation implements Runnable{
     }
 
 
-    @Override
     public void run() {
-        try {
-            // Submit tasks for fitness evaluation to the executor service
-            for (Graph graph : this.population) {
-                executor.submit(() -> {
-                    System.out.println("Thread " + Thread.currentThread().getName() + " is evaluating fitness...");
-                    graph.fitnessEvaluation(); // Perform the fitness evaluation
-                    try {
-                        barrier.await(); // Wait for all tasks to reach this point
-                    } catch (InterruptedException | BrokenBarrierException e) {
-                        Thread.currentThread().interrupt(); // Set the interrupt flag
-                        System.err.println("Error waiting at the barrier: " + e.getMessage());
-                    }
-                });
-            }
+         int numberOfThreads = processorCount;
+         CyclicBarrier barrier = new CyclicBarrier(populationSize +1 , () -> {
+            System.out.println("All threads have reached the barrier. Now sorting the population.");
 
-            // Wait for all submitted tasks to reach the barrier, including this run() execution
-            barrier.await();
+            Collections.sort(population, Comparator.comparingDouble(Graph::getFitnessScore).reversed());
+            System.out.println("Sorting completed.");
+        });
 
-        } catch (InterruptedException | BrokenBarrierException e) {
-            Thread.currentThread().interrupt(); // Set the interrupt flag
-            System.err.println("Run method's thread was interrupted or broken barrier: " + e.getMessage());
-        } finally {
-            // Ensure all tasks are done before shutting down the executor
-            System.out.println("Shutting down the executor service...");
-            executor.shutdown();
-            try {
-                // Wait for currently executing tasks to complete
-                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    executor.shutdownNow(); // Forcefully shutdown if tasks did not complete in time
+        ExecutorService executor = Executors.newFixedThreadPool(populationSize);
+
+        System.out.println("Starting fitness evaluation tasks.");
+        for (int i = 0; i < population.size(); i++) { //Was here with .stream().forEach but changed to see the index
+            int index = i; // for logging
+            executor.submit(() -> {
+                //System.out.println("Thread " + Thread.currentThread().getId() + " is evaluating fitness for graph at index " + index);
+                population.get(index).fitnessEvaluation();
+                try {
+                    //System.out.println("Thread " + Thread.currentThread().getId() + " is waiting at the barrier.");
+                    barrier.await();// Each of the threads will wait here until all threads have reached this point
+                    //System.out.println("Thread " + Thread.currentThread().getId() + " has passed the barrier.");
+                } catch (InterruptedException | BrokenBarrierException e) {
+                    Thread.currentThread().interrupt();
+                    //System.err.println("Thread interrupted or barrier broken: " + e.getMessage());
                 }
-            } catch (InterruptedException e) {
-                executor.shutdownNow(); // Ensure shutdown if current thread is interrupted
-                Thread.currentThread().interrupt(); // Preserve interrupt status
-            }
+            });
         }
+
+        try {
+            //System.out.println("Main thread is waiting at the barrier.");
+            barrier.await();
+            // Main thread will wait here until all threads have reached this point
+            // I initialiesed the barrier with #cores (12 I have) + 1 for main thread
+           // System.out.println("Main thread has passed the barrier.");
+        } catch (InterruptedException | BrokenBarrierException e) {
+            Thread.currentThread().interrupt();
+            //System.err.println("Main thread interrupted or barrier broken: " + e.getMessage());
+        }
+        // We shut down the executor service after all threads have finished
+
+        executor.shutdown();
+        try {
+            //System.out.println("Shutting down executor service.");
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+                //System.out.println("Forcing shutdown of executor service.");
+            }
+        } catch (InterruptedException ie) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+            //System.err.println("Error while shutting down executor service: " + ie.getMessage());
+        }
+        //System.out.println("Run method completed.");
     }
-
-
 
 
 
