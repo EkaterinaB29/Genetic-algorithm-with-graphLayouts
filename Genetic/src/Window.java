@@ -9,11 +9,10 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
-    private int p = 1000; // Assuming 'p' is used somewhere in your GraphPopulation
+    private int p = 100;
 
     public Window() {
         setTitle("Choose initial values!");
-
         setSize(600, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -24,16 +23,12 @@ public class Window extends JFrame implements ActionListener {
     private void initUI() {
         // Create layout and components
         JPanel parametersPanel = new JPanel();
-
         parametersPanel.setLayout(new BoxLayout(parametersPanel, BoxLayout.Y_AXIS));
         parametersPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Add padding around the panel
-
-
         // Mode buttons
         sequentialButton = new JRadioButton("Sequential", true);
         parallelButton = new JRadioButton("Parallel");
         distributiveButton = new JRadioButton("Distributive");
-
 
         runButton = new JButton("Run");
         runButton.setAlignmentX(Component.CENTER_ALIGNMENT); // Center the button
@@ -41,7 +36,6 @@ public class Window extends JFrame implements ActionListener {
         runButton.setBackground(new Color(150, 100, 200)); // Set button color
         runButton.setForeground(Color.WHITE); // Set text color
         runButton.addActionListener(this);
-
 
         ButtonGroup modeGroup = new ButtonGroup();
         modeGroup.add(sequentialButton);
@@ -51,7 +45,6 @@ public class Window extends JFrame implements ActionListener {
         parametersPanel.add(sequentialButton);
         parametersPanel.add(parallelButton);
         parametersPanel.add(distributiveButton);
-
 
         parametersPanel.add(createInputField("Enter width of the desired window:", widthField = new JTextField()));
         parametersPanel.add(createInputField("Enter height of the desired window:", heightField = new JTextField()));
@@ -89,15 +82,18 @@ public class Window extends JFrame implements ActionListener {
 
             Thread thread = new Thread(population);
             thread.start(); // Start the population initialization and genetic operations in a separate thread
+           try {
+                thread.join();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+
             computation.compute(); // proceed with GA
-
-
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(null, "The values must be integers!");
         }
     }
-
 }
 
 

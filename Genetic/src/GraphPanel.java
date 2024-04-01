@@ -32,7 +32,7 @@ class GraphPanel extends JPanel {
         double offsetY = -miny + edge;
 
         // Draw edges
-        g.setColor(Color.blue);
+        g.setColor(new Color(125,10,200));
         int i = 0;
 
         while (i < graph.getEdges().size()) {
@@ -49,7 +49,7 @@ class GraphPanel extends JPanel {
 
         // Draw nodes
 
-        g.setColor(Color.red);
+        g.setColor(new Color(150,0,50));
         for (Node node : graph.getNodes()) {
             double x = scaleX * (node.getX() + offsetX);
             double y = scaleY * (node.getY() + offsetY);
