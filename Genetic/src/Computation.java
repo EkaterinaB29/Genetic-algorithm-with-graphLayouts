@@ -19,7 +19,8 @@ public class Computation {
             population.addNewGraphs(population.combine());
             population.mutation(GraphPopulation.MUTATION_PROBABILITY);
             getBestGraph(population);
-            showBestGraph(getBestGraph(population));
+
+           // showBestGraph(getBestGraph(population));
             iterations--;
         }
         long elapsedTime = System.currentTimeMillis() - startTime;

@@ -13,32 +13,37 @@ public class GraphPopulation implements Runnable {
     private final int populationSize;
     int processorCount;
     private ExecutorService executor;
-    //private  CyclicBarrier barrier;
-    private Semaphore semaphore;
-    private CountDownLatch latch;
+    private CyclicBarrier barrier;
+    private Semaphore semaphore; /*main thread can be faster since it needs populationSize +1 permits of the semaphore to proceed and may aquire them faster*/
+    private CountDownLatch latch; /*cannot be reset , but we make one for each population*/
 
-    public GraphPopulation(Graph initialGraph, int populationSize, GraphPanel panel, int processorCount) {
+    private Mode executionMode;
+
+    public GraphPopulation(Graph initialGraph, int populationSize, GraphPanel panel, int processorCount, Mode mode) {
         this.processorCount = processorCount;
         this.populationSize = populationSize;
-        this.panel=panel;
+        this.panel = panel;
+        this.executionMode = mode;
         executor = Executors.newFixedThreadPool(processorCount);
-       // barrier = new CyclicBarrier(populationSize + 1);
+        barrier = new CyclicBarrier(populationSize + 1);
         initialGraphPopulation(initialGraph);
         //fitnessScoreEvaluate(population);
         semaphore = new Semaphore(populationSize + 1);
-        latch = new CountDownLatch(populationSize+1);
+        latch = new CountDownLatch(populationSize + 1);
 
     }
 
-    public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel, int processorCount) {
+    public GraphPopulation(ArrayList<Graph> selectedIndividuals, int populationSize, GraphPanel panel, int processorCount, Mode mode) {
         this.population = selectedIndividuals;
         this.processorCount = processorCount;
         this.populationSize = populationSize;
-        this.panel= panel;
-        //barrier = new CyclicBarrier(populationSize + 1); //
+        this.panel = panel;
+        this.executionMode = mode;
+        barrier = new CyclicBarrier(populationSize + 1); //
         executor = Executors.newFixedThreadPool(processorCount);
         semaphore = new Semaphore(populationSize + 1);
-        latch = new CountDownLatch(populationSize+1);
+
+        latch = new CountDownLatch(populationSize + 1);
         //fitnessScoreEvaluate(population); //
     }
 
@@ -52,6 +57,11 @@ public class GraphPopulation implements Runnable {
 
     public GraphPanel getPanel() {
         return panel;
+    }
+
+    public Mode setExecutionMode() {
+
+        return this.executionMode;
     }
 
     // function to create the population of graphs according to the first one
@@ -79,7 +89,7 @@ public class GraphPopulation implements Runnable {
             Graph copyGraph = new Graph(g.getNodes(), g.getEdges(), g.getH(), g.getW());
             selectedGraphs.add(copyGraph);
         }
-        return new GraphPopulation(selectedGraphs, populationSize, panel, processorCount);
+        return new GraphPopulation(selectedGraphs, populationSize, panel, processorCount, executionMode);
     }
 
     public Graph getInitialGraph() {
@@ -151,13 +161,12 @@ public class GraphPopulation implements Runnable {
         return this;
 
     }
-    /**Not best approach
+
+    //
     @Override
     public void run() {
+        //AtomicInteger successfulEvaluations = new AtomicInteger(0);
         try {
-            //AtomicInteger successfulEvaluations = new AtomicInteger(0); // to count successful evaluations
-
-            // Submit fitness evaluation tasks for each graph
             for (int i = 0; i < populationSize; i++) {
                 Graph graph = population.get(i);
                 int finalI = i;
@@ -165,35 +174,36 @@ public class GraphPopulation implements Runnable {
                     try {
                         graph.fitnessEvaluation(); // Perform fitness evaluation
                         System.out.println("Fitness evaluated for graph at index:" + finalI);
-                        //successfulEvaluations.incrementAndGet();
+                        semaphore.release();
                     } catch (Exception e) {
-
                         System.err.println("Error evaluating fitness for graph at index:" + finalI);
                         e.printStackTrace();
                     }
                 });
             }
-            executor.shutdown();
-            if (!executor.awaitTermination(10, TimeUnit.MINUTES)) {
-                executor.shutdownNow(); // Force shutdown if tasks did not complete in time
+            try {
+                semaphore.acquire(populationSize + 1); //wait for all others
+                System.out.println("Waiting for all evaluations to complete...");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
 
-          /*  if (successfulEvaluations.get() == populationSize) {
-                System.out.println("All fitness evaluations completed successfully.");
-            } else {
-                System.out.println("Some fitness evaluations failed.");
-            }
-        } catch (InterruptedException e) {
-            // Handle InterruptedException
-            Thread.currentThread().interrupt(); // Reset the interrupted status
-            throw new RuntimeException(e);
+
+        } catch (Exception e) {
+            System.err.println("Error evaluating fitness for graph at index:");
+            e.printStackTrace();
         }
-    ****/
+    }
+
+}
+
+
 
 
     /**some threads evaluate later main is faster than the last threads*/
-    @Override
-    /**
+    //@Override
+    /***
     public void run() {
         for (Graph graph : population) {
             new Thread(() -> {
@@ -201,12 +211,12 @@ public class GraphPopulation implements Runnable {
                     graph.fitnessEvaluation();
                     System.out.println("Fitness evaluated for graph at index:" + population.indexOf(graph));
                 } finally {
-                    semaphore.release();
+                    semaphore.release(); //signal
                 }
             }).start();
         }
         try {
-            semaphore.acquire(populationSize + 1);
+            semaphore.acquire(populationSize + 1); //wait for all others
             System.out.println("Waiting for all evaluations to complete...");
 
         } catch (InterruptedException e) {
@@ -221,8 +231,8 @@ public class GraphPopulation implements Runnable {
     }**/
 
 
-
-    public void run() {
+    // cannot be reset to 0 back
+   /** public void run() {
         CountDownLatch latch = new CountDownLatch(populationSize);
 
         for (Graph graph : population) {
@@ -242,13 +252,52 @@ public class GraphPopulation implements Runnable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-
         System.out.println("All fitness evaluations completed successfully.");
         Collections.sort(population, Comparator.comparingDouble(Graph::getFitnessScore).reversed());
 
-    }
+    }***/
 
-}
+    /**public void run() {
+        switch (executionMode) {
+            case SEQUENTIAL:
+                    //sequential fitness evaluation
+                    fitnessScoreEvaluate(population);
+                    ArrayList<Graph> children = combine();
+                    break;
+            case PARALLEL:
+                    //parallel fitness evaluation
+                    for (Graph graph : population) {
+                        new Thread(() -> {
+                            try {
+                                graph.fitnessEvaluation();
+                                System.out.println("Fitness evaluated for graph.");
+                                barrier.await(); //Signal the barrier
+                            } catch (InterruptedException | BrokenBarrierException e) {
+                                Thread.currentThread().interrupt();
+                                System.err.println("Thread interrupted or barrier broken: " + e.getMessage());
+                            }
+                        }).start();
+                    }
+
+                    try {
+                        barrier.await(); //wait for main
+                        System.out.println("Main thread has passed the barrier.");
+                    } catch (InterruptedException | BrokenBarrierException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Main thread interrupted or barrier broken: " + e.getMessage());
+                    }
+                    System.out.println("All fitness evaluations completed successfully.");
+                    Collections.sort(population, Comparator.comparingDouble(Graph::getFitnessScore).reversed());
+                break;
+        }
+
+
+
+    }**/
+
+
+
+
 
 
 

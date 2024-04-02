@@ -77,7 +77,9 @@ public class Window extends JFrame implements ActionListener {
             GraphPanel graphPanel = new GraphPanel(initialGraph);
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
-            GraphPopulation population = new GraphPopulation(initialGraph, p, graphPanel, processors);
+            Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
+            GraphPopulation population = new GraphPopulation(initialGraph, p, graphPanel, processors,mode);
+
             Computation computation = new Computation(population);
 
             Thread thread = new Thread(population);
