@@ -9,7 +9,7 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
-    private int p = 100;
+    private int p = 10;
 
     public Window() {
         setTitle("Choose initial values!");
@@ -78,19 +78,9 @@ public class Window extends JFrame implements ActionListener {
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
             Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
-            GraphPopulation population = new GraphPopulation(initialGraph, p, graphPanel, processors,mode);
+            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, graphPanel,p, mode,processors);
+            computation.compute();
 
-            Computation computation = new Computation(population);
-
-            Thread thread = new Thread(population);
-            thread.start(); // Start the population initialization and genetic operations in a separate thread
-           try {
-                thread.join();
-            } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
-
-            computation.compute(); // proceed with GA
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(null, "The values must be integers!");

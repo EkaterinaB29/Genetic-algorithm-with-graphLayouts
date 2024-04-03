@@ -24,7 +24,7 @@ class Graph extends JPanel {
         this.w = w;
         addNodes();
         addEdges();
-        this.fitnessScore = fitnessEvaluation();
+        //this.fitnessScore = fitnessEvaluation();
     }
     //another constructor so it will know which one to use
     //used in the generation of the new population
@@ -41,7 +41,7 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        this.fitnessScore = fitnessEvaluation();
+        //this.fitnessScore = fitnessEvaluation();
     }
 
     /* A copy constructor. */
@@ -158,7 +158,7 @@ class Graph extends JPanel {
     sum the more evenly the nodes are usually distributed over the
     drawing area.*/
 
-    public double minimumNodeDistanceSum(Graph graph) {
+    public double minimumNodeDistanceSum() {
         double sum = 0;
         for (Node node : this.getNodes()) {
             sum += minimumDistanceNeighbour(node);
@@ -171,22 +171,47 @@ class Graph extends JPanel {
     the minimum edge length found from the present layout.*/
     ///*assuming here that the true value is the optimal value so the deviation will be
     //* calculated as a difference between the value of the edge minus optimalEdgeLength
-    public double edgeLengthDeviation()
-    {
-        if (getLengths().isEmpty())
-            return 0;
-        double optimalEdgeLength =Collections.min(this.lengths)+5; //TODO CHECK THIS WHEN TESTING SHOULD BE MODIFIED!!!
-        double sum=0;
-        Iterator<Double> iterator = this.lengths.iterator();
-        while (iterator.hasNext()) {
-            double d = iterator.next() - optimalEdgeLength;
-            sum+= Math.pow(d,2);
-        }
 
-        return Math.sqrt(sum);
+    public void fitnessEvaluation() {
+        double minNodeDist = minimumNodeDistanceSum();
+        minNodeDist = (minNodeDist == 0) ? Double.MIN_VALUE : minNodeDist;
+
+        double minNodeDist2 = Math.pow(minNodeDist, 2.0);
+        double edgeLenDev = edgeLengthDeviation();
+        double edgeCross = edgeCrossings();
+
+        double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * minNodeDist2 * numNodes) - edgeCross;
+        double diff = Math.max(0, calculatedDiff);
+
+        fitnessScore = Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
     }
 
-    // Method that counts edge crossings TODO RESTRUCTURE
+    /*
+    private double minimumNodeDistanceSum() {
+        double sum = 0;
+        for (Node node : nodes) {
+            sum += nodes.stream()
+                    .filter(other -> !other.equals(node))
+                    .mapToDouble(other -> Node.euclideanDistance(node, other))
+                    .min()
+                    .orElse(Double.MAX_VALUE);
+        }
+        return sum;
+    }*/
+
+    private double edgeLengthDeviation() {
+        double optimalEdgeLength = edges.stream()
+                .mapToDouble(e -> Node.euclideanDistance(e.origin, e.destination))
+                .min()
+                .orElse(Double.MAX_VALUE) + 5; //Method that counts edge crossings TODO RESTRUCTURE
+        return edges.stream()
+                .mapToDouble(e -> Math.pow(Node.euclideanDistance(e.origin, e.destination) - optimalEdgeLength, 2))
+                .average()
+                .orElse(Double.MAX_VALUE);
+    }
+
+
+
 
    public double edgeCrossings() {
         double edgeCross = 0;
@@ -209,29 +234,7 @@ class Graph extends JPanel {
     }
 
     //  fitness evaluation
-    public double fitnessEvaluation()
-    {
-        double minNodeDist = minimumNodeDistanceSum(this);
-        double minNodeDist2 = Math.pow(minNodeDist, 2.0);
-        double edgeLenDev = edgeLengthDeviation();
-        double edgeCross = edgeCrossings();
-        double ratioEdgeLenDev = edgeLenDev / minNodeDist;
 
-        // Check for to avoid division by zero.
-        if (minNodeDist == 0) {
-            return Double.MAX_VALUE;
-        }
-        double calculatedDiff = ratioEdgeLenDev - (0.25 * minNodeDist2 * numNodes) - edgeCross;
-        double diff = Math.max(0, calculatedDiff);
-        double fitness_score= 4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff;
-
-        if (fitness_score < Double.MIN_VALUE) {
-            return Double.MIN_VALUE;
-        } else if (fitness_score > Double.MAX_VALUE) {
-            return Double.MAX_VALUE;
-        }
-        return fitness_score;
-    }
 
 
     //mutation on a single Node TODO RESTRUCTURE!
@@ -267,10 +270,14 @@ class Graph extends JPanel {
                     double radius = Node.euclideanDistance(randomNode, connectedNode);
                     double newX = (radius * Math.cos(angle * Math.PI / 180)) + randomNode.getX();
                     double newY = (radius * Math.sin(angle * Math.PI / 180)) + randomNode.getY();
-                    Node.moveNode(randomNode, newX,newY);
+                    // Ensure the new position is within bounds
+                    randomNode.x = Math.max(0, Math.min(w, newX));
+                    randomNode.y = Math.max(0, Math.min(h, newY));
+
+                    Node.moveNode(randomNode, newX,newY); //redundant
 
                 });
-        this.fitnessScore = fitnessEvaluation();
+       // this.fitnessScore = fitnessEvaluation();
         return this;
     }
 
