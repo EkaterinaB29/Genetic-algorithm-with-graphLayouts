@@ -41,7 +41,7 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        //this.fitnessScore = fitnessEvaluation();
+        fitnessEvaluation(); //*is this okay?*/
     }
 
     /* A copy constructor. */

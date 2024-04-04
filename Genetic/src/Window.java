@@ -9,7 +9,7 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
-    private int p = 10;
+    private int p = 100;
 
     public Window() {
         setTitle("Choose initial values!");

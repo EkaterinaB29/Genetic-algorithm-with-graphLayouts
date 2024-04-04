@@ -18,19 +18,21 @@ public class GeneticAlgorithm implements Runnable{
     private final Mode executionMode;
     int processorCount;
     private final ExecutorService executor;
-    private final Semaphore semaphore; /*main thread can be faster since it needs populationSize +1 permits of the semaphore to proceed and may aquire them faster*/
+    private final Semaphore semaphore;
 
 
     public GeneticAlgorithm(Graph initialGraph, GraphPanel panel, int populationSize, Mode executionMode, int processorCount) {
         this.initialGraph = initialGraph;
         this.panel = panel;
         this.populationSize = populationSize;
-        initialGraphPopulation(initialGraph);
+        this.population=population;
+        initialGraphPopulation(initialGraph); //[E] for some reason in sequental it copies the same graph over and over again in 1 generation, yes it should be the same but I use the constructor to move the nodes
+        // hence it should be different fitness and not the same one
         //fitnessScoreEvaluate(population);
         this.executionMode = executionMode;
         this.processorCount = processorCount;
         this.executor = Executors.newFixedThreadPool(processorCount);
-        semaphore = new Semaphore(0);
+        semaphore = new Semaphore(0); /*at start maybe it should be 0, right then we should increase it to populationSize +1 for main with release*/
     }
 
 
@@ -51,7 +53,7 @@ public class GeneticAlgorithm implements Runnable{
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
         Collections.reverse(population);
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
-        population.subList(0, population.size() / 2).forEach(graph ->selectedGraphs.add(new Graph(graph.getNodes(), graph.getEdges(), graph.getH(), graph.getW())));
+        population.subList(0, (populationSize / 2)).forEach(graph ->selectedGraphs.add(new Graph(graph.getNodes(), graph.getEdges(), graph.getH(), graph.getW())));
         this.population = selectedGraphs;
     }
 
@@ -60,8 +62,11 @@ public class GeneticAlgorithm implements Runnable{
         Graph parent1;
         Graph parent2;
         ArrayList<Graph> children = new ArrayList<>();
+        System.out.println("Population size: " + population.size());
+        System.out.println("PopulationSize: " + populationSize);
 
-        for (int i = 0; i < population.size()/2; i += 2) {
+        for (int i = 0; i < population.size(); i += 2) {
+            System.out.println("parent1: " + i + " parent2: " + (i + 1));
             parent1 = population.get(i);
             parent2 = population.get(i + 1);
 
@@ -87,9 +92,14 @@ public class GeneticAlgorithm implements Runnable{
                 connectEdge(firstChildNodes, firstChildEdges, nodes);
                 connectEdge(secondChildNodes, secondChildEdges, nodes);
             });
-            population.add(new Graph(firstChildNodes, firstChildEdges, parent1.getH(), parent1.getW()));
-            population.add(new Graph(secondChildNodes, secondChildEdges, parent1.getH(), parent1.getW()));
+            children.add(new Graph(firstChildNodes, firstChildEdges, parent1.getH(), parent1.getW()));
+            children.add(new Graph(secondChildNodes, secondChildEdges, parent1.getH(), parent1.getW()));
         }
+        //first add them in arrayList and then add them to the population
+        //so the loop is not messed up since the size of the population is changing
+
+
+        population.addAll(children);
 
     }
 
@@ -111,7 +121,7 @@ public class GeneticAlgorithm implements Runnable{
     public void run() {
         // This assumes semaphore has enough permits to control task completion.
         final int totalTasks = populationSize+1;
-        //semaphore.drainPermits(); // Ensures semaphore starts at zero available permits.
+        semaphore.drainPermits(); //[E] I think this is the correct way to do it because if I want to reuse it i need to reset it right?
 
         for (Graph graph : this.population) {
             executor.submit(() -> {
@@ -121,18 +131,19 @@ public class GeneticAlgorithm implements Runnable{
                 } catch (Exception e) {
                     System.err.println("Error during fitness evaluation: " + e.getMessage());
                 } finally {
-                    semaphore.release(); // Signal task completion.
+                    semaphore.release(); // Increase it
                 }
             });
         }
 
         try {
-            semaphore.acquire(totalTasks);
+            semaphore.acquire(totalTasks); // [E] and now check if all of them finished
             System.out.println("All evaluations have completed.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             System.err.println("Thread was interrupted while waiting for evaluations to complete: " + e.getMessage());
         }
+
 
     }
 
@@ -142,8 +153,14 @@ public class GeneticAlgorithm implements Runnable{
         long startTime = System.currentTimeMillis();
         while(iterations!=0)
         {
-            new Thread(this).start();
-
+            Thread newThread = new Thread(this);
+            // [E] i do this so i wait for the threads to finish with evaluation and then we proceed with other stuff
+            newThread.start();
+            try {
+                newThread.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             selection();
             crossover();
             mutation(MUTATION_PROBABILITY);
