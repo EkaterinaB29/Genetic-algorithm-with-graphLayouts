@@ -120,16 +120,15 @@ public class GeneticAlgorithm implements Runnable{
     @Override
     public void run() {
         // This assumes semaphore has enough permits to control task completion.
-        final int totalTasks = populationSize+1;
         semaphore.drainPermits(); //[E] I think this is the correct way to do it because if I want to reuse it i need to reset it right?
 
         for (Graph graph : this.population) {
             executor.submit(() -> {
                 try {
                     graph.fitnessEvaluation(); // Perform fitness evaluation
-                    System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
+                    //System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
                 } catch (Exception e) {
-                    System.err.println("Error during fitness evaluation: " + e.getMessage());
+                    //System.err.println("Error during fitness evaluation: " + e.getMessage());
                 } finally {
                     semaphore.release(); // Increase it
                 }
@@ -137,14 +136,12 @@ public class GeneticAlgorithm implements Runnable{
         }
 
         try {
-            semaphore.acquire(totalTasks); // [E] and now check if all of them finished
-            System.out.println("All evaluations have completed.");
+            semaphore.acquire(populationSize); // [E] and now check if all of them finished
+            //System.out.println("All evaluations have completed.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            System.err.println("Thread was interrupted while waiting for evaluations to complete: " + e.getMessage());
+            //System.err.println("Thread was interrupted while waiting for evaluations to complete: " + e.getMessage());
         }
-
-
     }
 
 
