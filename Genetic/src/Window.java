@@ -4,6 +4,8 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
@@ -72,8 +74,15 @@ public class Window extends JFrame implements ActionListener {
             int numEdges = Integer.parseInt(edgesField.getText());
             int windowHeight = Integer.parseInt(heightField.getText());
             int windowWidth = Integer.parseInt(widthField.getText());
+            Random random = new Random();
+            ArrayList<Edge> edges = new ArrayList<>();
+            for (int i = 0; i < numEdges; i++) {
+                int origin = random.nextInt(numNodes);
+                int destination =( 1+origin + random.nextInt(numNodes) )% numNodes;
+                edges.add(new Edge(origin,destination));
+            }
 
-            Graph initialGraph = new Graph(numNodes, numEdges, windowWidth, windowHeight);
+            Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
             GraphPanel graphPanel = new GraphPanel(initialGraph);
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();

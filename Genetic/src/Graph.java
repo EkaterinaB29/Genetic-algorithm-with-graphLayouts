@@ -14,16 +14,17 @@ class Graph extends JPanel {
     private int currentIndex = 0;
 
     // constructor
-    public Graph(int n, int m, int h, int w) {
+    public Graph(int n, ArrayList<Edge> edges, int h, int w) {
         this.nodes = new ArrayList<>();
         this.edges = new ArrayList<>();
         this.lengths= new ArrayList<>();
         this.numNodes = n;
-        this.numEdges = m;
+        this.numEdges = edges.size();
         this.h = h;
         this.w = w;
         addNodes();
-        addEdges();
+        this.edges = edges;
+
         //this.fitnessScore = fitnessEvaluation();
     }
     //another constructor so it will know which one to use
@@ -41,32 +42,7 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        fitnessEvaluation(); //*is this okay?*/
-    }
-
-    /* A copy constructor. */
-    public Graph(ArrayList<Node> nodes, ArrayList<Edge> edges, int h, int w, Graph graph)
-    {
-        this.edges = new ArrayList<Edge>();
-        this.nodes = new ArrayList<Node>();
-
-        for (Node node : graph.nodes) {
-            this.nodes.add(new Node(node));
-        }
-        for (Edge edge : graph.edges) {
-            Node node0 = getNodeId(edge.getOrigin().getId());
-            Node node1 = getNodeId(edge.getDestination().getId());
-            Edge newEdge = new Edge(node0, node1);
-            this.edges.add(newEdge);
-        }
-        this.h = graph.h;
-        this.w = graph.w;
-        lengths = new ArrayList<Double>();
-        lengths.addAll(graph.lengths);
-        numNodes = this.nodes.size();
-        numEdges = this.edges.size();
-        fitnessScore = graph.fitnessScore;
-        currentIndex = graph.currentIndex;
+        fitnessEvaluation();
     }
 
     public double getFitnessScore()
@@ -120,15 +96,7 @@ class Graph extends JPanel {
         }
     }
 
-    public void addEdges() {
-        for (int i = 0; i < numEdges; i++) {
-            Collections.shuffle(nodes);
-            Node sourceNode = nodes.getFirst();
-            Node destinationNode = nodes.stream().filter(node -> node!=sourceNode).toList().getFirst();
-            Edge pair = new Edge(sourceNode, destinationNode);
-            edges.add(pair);
-        }
-    }
+
 
 
     //  Method to get a random Node
@@ -140,8 +108,8 @@ class Graph extends JPanel {
     public double minimumDistanceNeighbour(Node startNode ) {
         double minDistance = Double.MAX_VALUE;
         this.edges.forEach(edge -> {
-            if (edge.origin == startNode || edge.destination == startNode) {
-                double edgeLength = Node.euclideanDistance(edge.origin, edge.destination);
+            if (edge.getOrigin(nodes) == startNode || edge.getDestination(nodes) == startNode) {
+                double edgeLength = Node.euclideanDistance(edge.getOrigin(nodes), edge.getDestination(nodes));
                 getLengths().add(edgeLength); // add the length of the newly created edge
             }
         });
@@ -201,11 +169,11 @@ class Graph extends JPanel {
 
     private double edgeLengthDeviation() {
         double optimalEdgeLength = edges.stream()
-                .mapToDouble(e -> Node.euclideanDistance(e.origin, e.destination))
+                .mapToDouble(e -> Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes)))
                 .min()
                 .orElse(Double.MAX_VALUE) + 5; //Method that counts edge crossings TODO RESTRUCTURE
         return edges.stream()
-                .mapToDouble(e -> Math.pow(Node.euclideanDistance(e.origin, e.destination) - optimalEdgeLength, 2))
+                .mapToDouble(e -> Math.pow(Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes)) - optimalEdgeLength, 2))
                 .average()
                 .orElse(Double.MAX_VALUE);
     }
@@ -222,7 +190,7 @@ class Graph extends JPanel {
             int j = i + 1;
             while (j < this.getEdges().size()) {
                 Edge edge2 = edges.get(j);
-                if (edge1.intersects(edge2)){
+                if (edge1.intersects(edge2,nodes)){
                     edgeCross++;
                 }
                 j++;
@@ -262,9 +230,9 @@ class Graph extends JPanel {
 
         // to find those connected to the randomNode and apply mutation
         edges.stream()
-                .filter(edge -> edge.getOrigin() == randomNode || edge.getDestination() == randomNode)
+                .filter(edge -> edge.getOrigin(nodes) == randomNode || edge.getDestination(nodes) == randomNode)
                 .forEach(edge -> {
-                    Node connectedNode = edge.getOrigin()== randomNode ? edge.getDestination() : edge.getOrigin();
+                    Node connectedNode = edge.getOrigin(nodes)== randomNode ? edge.getDestination(nodes) : edge.getOrigin(nodes);
                     // if it is the origin node, then find the destination
                     // if it was the destination random node chosen then give its origin mate
                     double radius = Node.euclideanDistance(randomNode, connectedNode);

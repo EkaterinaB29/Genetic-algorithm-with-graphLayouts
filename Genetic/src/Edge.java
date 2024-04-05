@@ -1,44 +1,29 @@
+import java.util.ArrayList;
+
 import static java.awt.geom.Line2D.linesIntersect;
 
-public class Edge {
-    Node origin;
-    Node destination;
+public final class Edge {
+    int origin;
+    int destination;
 
-    public Edge(Node origin, Node destination) {
+    public Edge(int origin, int destination) {
         this.origin = origin;
         this.destination = destination;
     }
 
-    public boolean intersects(Edge other) {
+    public boolean intersects(Edge other, ArrayList<Node> nodes) {
         return linesIntersect(
-                this.origin.getX(), this.origin.getY(),
-                this.destination.getX(), this.destination.getY(),
-                other.getOrigin().getX(), other.getOrigin().getY(),
-                other.getDestination().getX(), other.getDestination().getY());
+                nodes.get(other.origin).getX(), nodes.get(other.destination).getY(),
+                nodes.get(this.origin).getX(), nodes.get(this.destination).getY(),
+                other.getOrigin(nodes).getX(), other.getOrigin(nodes).getY(),
+                other.getDestination(nodes).getX(), other.getDestination(nodes).getY());
     }
 
-
-    public Node getOrigin() {
-        return origin;
+    public Node getOrigin(ArrayList<Node> nodes) {
+        return nodes.get(origin);
     }
 
-    public Node getDestination() {
-        return destination;
-    }
-
-    public void setOrigin(Node origin) {
-        this.origin = origin;
-    }
-
-    public void setDestination(Node destination) {
-        this.destination = destination;
-    }
-
-    public double getLength() {
-        return Node.euclideanDistance(origin, destination);
-    }
-
-    public Edge copy() {
-        return new Edge(new Node(origin), new Node(destination));
+    public Node getDestination(ArrayList<Node> nodes) {
+        return nodes.get(destination);
     }
 }

@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 
+
 class GraphPanel extends JPanel {
     private Graph graph;
     public GraphPanel(Graph graph) {
@@ -36,8 +37,8 @@ class GraphPanel extends JPanel {
         int i = 0;
 
         while (i < graph.getEdges().size()) {
-            Node start = graph.getEdges().get(i).getOrigin();
-            Node end = graph.getEdges().get(i).getDestination();
+            Node start = graph.getEdges().get(i).getOrigin(graph.nodes);
+            Node end = graph.getEdges().get(i).getDestination(graph.nodes);
 
             int x = (int) (scaleX * (start.getX() + offsetX));
             int y = (int) (scaleY * (start.getY() + offsetY));
@@ -66,5 +67,7 @@ class GraphPanel extends JPanel {
 
 
     public void setGraph(Graph bestGraph) {
+        this.graph = bestGraph;
+        this.repaint();
     }
 }
