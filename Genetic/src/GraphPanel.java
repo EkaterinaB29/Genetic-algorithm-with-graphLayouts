@@ -56,7 +56,7 @@ class GraphPanel extends JPanel {
             double y = scaleY * (node.getY() + offsetY);
 
             g.fillOval((int) x-5, (int) y-5, 15, 15);
-            g.drawString(""+node.id,(int) x-5, (int) y-5);
+            g.drawString(""+node.getId(),(int) x-5, (int) y-5);
         }
 
         g.setColor(Color.BLACK);

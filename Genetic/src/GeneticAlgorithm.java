@@ -24,19 +24,15 @@ public class GeneticAlgorithm {
     GraphPanel renderer;
 
 
-
     public GeneticAlgorithm(Graph initialGraph, GraphPanel panel, int populationSize, Mode executionMode, int processorCount) {
         this.initialGraph = initialGraph;
         this.panel = panel;
         this.populationSize = populationSize;
-        initialGraphPopulation(initialGraph); //[E] for some reason in sequental it copies the same graph over and over again in 1 generation, yes it should be the same but I use the constructor to move the nodes
-        // hence it should be different fitness and not the same one
-        //fitnessScoreEvaluate(population);
+        initialGraphPopulation(initialGraph);
         this.executionMode = executionMode;
         this.processorCount = processorCount;
         this.executor = Executors.newFixedThreadPool(processorCount);
-        semaphore = new Semaphore(0); /*at start maybe it should be 0, right then we should increase it to populationSize +1 for main with release*/
-
+        semaphore = new Semaphore(0);
 
         frame.setSize(initialGraph.getW(),initialGraph.getH());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -44,20 +40,14 @@ public class GeneticAlgorithm {
 
     }
 
-
-
-
     // function to create the population of graphs according to the first one
     private void initialGraphPopulation(Graph initialGraph) {
         for (int i = 0; i < populationSize; i++) {
-            population.add(new Graph(initialGraph.nodes, initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
+            this.population.add(new Graph(initialGraph.nodes, initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
         }
     }
 
-    public void fitnessScoreEvaluate(ArrayList<Graph> population) {
-       population.stream().forEach(graph -> graph.fitnessEvaluation());
-       population.sort(Comparator.comparingDouble(Graph::getFitnessScore)); // todo redundant
-    }
+
     public void selection() {
         System.out.print("Selection phase");
         long now = System.currentTimeMillis();
@@ -96,32 +86,6 @@ public class GeneticAlgorithm {
             // Create new Graph objects for the children
             children.add(new Graph(firstChildNodes,parent1.getEdges(), parent1.getH(), parent1.getW()));
             children.add(new Graph(secondChildNodes,parent1.getEdges(), parent1.getH(), parent1.getW()));
-
-        /*
-            for (int j = 0; j < parent1.getNodes().size(); j++) {
-                if (j <= separator) {
-                    firstChildNodes.add(new Node(parent2.getNodes().get(j)));
-                    secondChildNodes.add(new Node(parent1.getNodes().get(j)));
-                } else {
-                    //then copy of parent2
-                    secondChildNodes.add(new Node(parent2.getNodes().get(j)));
-                    firstChildNodes.add(new Node(parent1.getNodes().get(j)));
-                }
-            }
-            parent2.getEdges().forEach(nodes -> {
-                connectEdge(firstChildNodes, firstChildEdges, nodes);
-                connectEdge(secondChildNodes, secondChildEdges, nodes);
-            });
-            children.add(new Graph(firstChildNodes, firstChildEdges, parent1.getH(), parent1.getW()));
-            children.add(new Graph(secondChildNodes, secondChildEdges, parent1.getH(), parent1.getW()));
-
-
-        }
-        //first add them in arrayList and then add them to the population
-        //so the loop is not messed up since the size of the population is changing
-        population.addAll(children);
-
-         */
         }
         population.addAll(children);
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
@@ -142,14 +106,13 @@ public class GeneticAlgorithm {
     public void calculateFitness(){
         System.out.print("Calculating fitness");
         long now = System.currentTimeMillis();
-        // This assumes semaphore has enough permits to control task completion.
-        semaphore.drainPermits(); //[E] I think this is the correct way to do it because if I want to reuse it i need to reset it right?
 
+        semaphore.drainPermits(); //
         for (Graph graph : this.population) {
             executor.submit(() -> {
                 try {
                     graph.fitnessEvaluation(); // Perform fitness evaluation
-                    //System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
+                    System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
                 } catch (Exception e) {
                     //System.err.println("Error during fitness evaluation: " + e.getMessage());
                 } finally {
@@ -159,7 +122,7 @@ public class GeneticAlgorithm {
         }
 
         try {
-            semaphore.acquire(populationSize); // [E] and now check if all of them finished
+            semaphore.acquire(populationSize);
             //System.out.println("All evaluations have completed.");
             System.out.println(" completed in: " + (System.currentTimeMillis()-now));
         } catch (InterruptedException e) {
@@ -171,12 +134,14 @@ public class GeneticAlgorithm {
     public void compute()
     {
         long startTime = System.currentTimeMillis();
+
         while(iterations!=0)
         {
             calculateFitness();
             selection();
             crossover();
-            mutation(MUTATION_PROBABILITY);
+           //mutation(MUTATION_PROBABILITY);
+
             //getBestGraph(this.population);
             //showBestGraph(getBestGraph(population));
             System.out.println("Generation best: " + getBestGraph(population).fitnessScore);

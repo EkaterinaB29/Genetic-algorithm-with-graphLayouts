@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.awt.*;
 import java.util.*;
 
 class Graph extends JPanel {
@@ -11,27 +12,31 @@ class Graph extends JPanel {
     public int h;
     public int w;
     static Random random = new Random();
-    private int currentIndex = 0;
+    private Map<Node, Point> nodePositions;
 
     // constructor
     public Graph(int n, ArrayList<Edge> edges, int h, int w) {
         this.nodes = new ArrayList<>();
-        this.edges = new ArrayList<>();
+        this.edges = edges;
         this.lengths= new ArrayList<>();
         this.numNodes = n;
         this.numEdges = edges.size();
         this.h = h;
         this.w = w;
         addNodes();
-        this.edges = edges;
 
-        //this.fitnessScore = fitnessEvaluation();
+
     }
+
+
     //another constructor so it will know which one to use
     //used in the generation of the new population
-    public Graph(ArrayList<Node> nodes, ArrayList<Edge> edges, int h, int w)
+    public Graph(ArrayList<Node> originalnodes, ArrayList<Edge> edges, int h, int w)
     {
-        this.nodes= new ArrayList<>(nodes);
+        this.nodes= new ArrayList<>();
+        for (Node node :originalnodes) {
+            this.nodes.add(new Node(node));  // Using copy constructor
+        }
         nodes.forEach(node -> {
             node.x += random.nextInt(-1,1) * random.nextInt(4);
             node.y += random.nextInt(-1,1) * random.nextInt(4);
@@ -42,7 +47,7 @@ class Graph extends JPanel {
         this.lengths= new ArrayList<>();
         this.h = h;
         this.w = w;
-        fitnessEvaluation();
+
     }
 
     public double getFitnessScore()
@@ -96,9 +101,6 @@ class Graph extends JPanel {
         }
     }
 
-
-
-
     //  Method to get a random Node
     public Node getRandomNode() {
         int randomIndex = random.nextInt(getNodes().size());
@@ -128,7 +130,7 @@ class Graph extends JPanel {
 
     public double minimumNodeDistanceSum() {
         double sum = 0;
-        for (Node node : this.getNodes()) {
+        for (Node node : nodes) {
             sum += minimumDistanceNeighbour(node);
         }
         return sum;
@@ -142,7 +144,7 @@ class Graph extends JPanel {
 
     public void fitnessEvaluation() {
         double minNodeDist = minimumNodeDistanceSum();
-        minNodeDist = (minNodeDist == 0) ? Double.MIN_VALUE : minNodeDist;
+        minNodeDist = (minNodeDist == 0) ? Double.MAX_VALUE : minNodeDist;
 
         double minNodeDist2 = Math.pow(minNodeDist, 2.0);
         double edgeLenDev = edgeLengthDeviation();
@@ -151,7 +153,7 @@ class Graph extends JPanel {
         double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * minNodeDist2 * numNodes) - edgeCross;
         double diff = Math.max(0, calculatedDiff);
 
-        fitnessScore = Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
+        this.fitnessScore= Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
     }
 
     /*
