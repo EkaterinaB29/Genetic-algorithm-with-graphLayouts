@@ -1,19 +1,17 @@
 import javax.swing.*;
 import java.awt.*;
 
-
 class GraphPanel extends JPanel {
     private Graph graph;
+
     public GraphPanel(Graph graph) {
         this.graph = graph;
-
     }
-
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        super.setSize(graph.getW(),graph.getH());
+        super.setSize(graph.getW(), graph.getH());
 
         double edge = 50;
         double minx = graph.getNodes().getFirst().x;
@@ -27,13 +25,13 @@ class GraphPanel extends JPanel {
             if (node.getY() < miny) miny = node.getY();
         }
 
-        double scaleX = graph.getW() / (maxx - minx + 2*edge);
-        double scaleY = graph.getH() / (maxy - miny + 2*edge);
+        double scaleX = graph.getW() / (maxx - minx + 2 * edge);
+        double scaleY = graph.getH() / (maxy - miny + 2 * edge);
         double offsetX = -minx + edge;
         double offsetY = -miny + edge;
 
         // Draw edges
-        g.setColor(new Color(125,10,200));
+        g.setColor(new Color(125, 10, 200));
         int i = 0;
 
         while (i < graph.getEdges().size()) {
@@ -49,25 +47,24 @@ class GraphPanel extends JPanel {
         }
 
         // Draw nodes
-
-        g.setColor(new Color(150,0,50));
+        g.setColor(new Color(150, 0, 50));
         for (Node node : graph.getNodes()) {
             double x = scaleX * (node.getX() + offsetX);
             double y = scaleY * (node.getY() + offsetY);
-
-            g.fillOval((int) x-5, (int) y-5, 15, 15);
-            g.drawString(""+node.getId(),(int) x-5, (int) y-5);
+            g.fillOval((int) x - 5, (int) y - 5, 15, 15);
+            g.drawString("" + node.getId(), (int) x - 5, (int) y - 5);
         }
 
         g.setColor(Color.BLACK);
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        g.drawString("Fitness score:" + Double.toString(graph.fitnessScore), 10, 20);
+        g.drawString("Fitness score:" + graph.fitnessScore, 10, 20);
 
     }
-
 
     public void setGraph(Graph bestGraph) {
         this.graph = bestGraph;
+        //this.revalidate();
         this.repaint();
     }
+
 }

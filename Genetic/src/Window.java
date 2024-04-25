@@ -11,7 +11,7 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
-    private int p = 100;
+    private final int p = 100;
 
     public Window() {
         setTitle("Choose initial values!");
@@ -78,16 +78,15 @@ public class Window extends JFrame implements ActionListener {
             ArrayList<Edge> edges = new ArrayList<>();
             for (int i = 0; i < numEdges; i++) {
                 int origin = random.nextInt(numNodes);
-                int destination =( 1+origin + random.nextInt(numNodes) )% numNodes;
-                edges.add(new Edge(origin,destination));
+                int destination = (1 + origin + random.nextInt(numNodes)) % numNodes;
+                edges.add(new Edge(origin, destination));
             }
 
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
-            GraphPanel graphPanel = new GraphPanel(initialGraph);
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
             Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
-            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, graphPanel,p, mode,processors);
+            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, mode, processors);
             computation.compute();
 
 

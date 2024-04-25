@@ -1,16 +1,18 @@
 import javax.swing.*;
+import javax.swing.Timer;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class GeneticAlgorithm {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
-    private Graph initialGraph;
-    private GraphPanel panel;
-    private int populationSize;
-    int iterations= 10;
+    private final Graph initialGraph;
+    private final int populationSize;
+    int iterations = 10;
+    int generation = 0;
 
     //synchronization tools & other parameters
     static Random random = new Random();
@@ -19,24 +21,18 @@ public class GeneticAlgorithm {
     int processorCount;
     private final ExecutorService executor;
     private final Semaphore semaphore;
-
-    JFrame frame = new JFrame("Graph Display");
+    ArrayList<Graph> generationSnapshots = new ArrayList<>();
     GraphPanel renderer;
 
-
-    public GeneticAlgorithm(Graph initialGraph, GraphPanel panel, int populationSize, Mode executionMode, int processorCount) {
+    public GeneticAlgorithm(Graph initialGraph, int populationSize, Mode executionMode, int processorCount) {
         this.initialGraph = initialGraph;
-        this.panel = panel;
+        this.renderer = new GraphPanel(initialGraph);
         this.populationSize = populationSize;
         initialGraphPopulation(initialGraph);
         this.executionMode = executionMode;
         this.processorCount = processorCount;
         this.executor = Executors.newFixedThreadPool(processorCount);
         semaphore = new Semaphore(0);
-
-        frame.setSize(initialGraph.getW(),initialGraph.getH());
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
 
     }
 
@@ -47,18 +43,16 @@ public class GeneticAlgorithm {
         }
     }
 
-
     public void selection() {
         System.out.print("Selection phase");
         long now = System.currentTimeMillis();
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
         Collections.reverse(population);
         ArrayList<Graph> selectedGraphs = new ArrayList<>();
-        population.subList(0, (populationSize / 2)).forEach(graph ->selectedGraphs.add(new Graph(graph.getNodes(), graph.getEdges(), graph.getH(), graph.getW())));
+        population.subList(0, (populationSize / 2)).forEach(graph -> selectedGraphs.add(new Graph(graph.getNodes(), graph.getEdges(), graph.getH(), graph.getW())));
         this.population = selectedGraphs;
-        System.out.println(" completed in: " + (System.currentTimeMillis()-now));
+        System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
-
 
     public void crossover() {
         Graph parent1;
@@ -68,7 +62,6 @@ public class GeneticAlgorithm {
         long now = System.currentTimeMillis();
 
         for (int i = 0; i < population.size(); i += 2) {
-            //System.out.println("parent1: " + i + " parent2: " + (i + 1));
             parent1 = population.get(i);
             parent2 = population.get(i + 1);
 
@@ -84,8 +77,8 @@ public class GeneticAlgorithm {
             secondChildNodes.addAll(parent2.getNodes().subList(separator + 1, parent2.getNodes().size()));
 
             // Create new Graph objects for the children
-            children.add(new Graph(firstChildNodes,parent1.getEdges(), parent1.getH(), parent1.getW()));
-            children.add(new Graph(secondChildNodes,parent1.getEdges(), parent1.getH(), parent1.getW()));
+            children.add(new Graph(firstChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
+            children.add(new Graph(secondChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
         }
         population.addAll(children);
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
@@ -100,10 +93,10 @@ public class GeneticAlgorithm {
                 g.mutation();
             }
         }
-        System.out.println(" completed in: " + (System.currentTimeMillis()-now));
+        System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
 
-    public void calculateFitness(){
+    public void calculateFitness() {
         System.out.print("Calculating fitness");
         long now = System.currentTimeMillis();
 
@@ -120,38 +113,57 @@ public class GeneticAlgorithm {
                 }
             });
         }
-
         try {
             semaphore.acquire(populationSize);
-            //System.out.println("All evaluations have completed.");
-            System.out.println(" completed in: " + (System.currentTimeMillis()-now));
+            System.out.println(" completed in: " + (System.currentTimeMillis() - now));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            //System.err.println("Thread was interrupted while waiting for evaluations to complete: " + e.getMessage());
         }
     }
 
-    public void compute()
-    {
+    public void compute() {
         long startTime = System.currentTimeMillis();
-
-        while(iterations!=0)
-        {
-            calculateFitness();
+        calculateFitness();
+        generationSnapshots.add(initialGraph);
+        System.out.println("initial graph fitness: " + initialGraph.getFitnessScore());
+        while (iterations != 0) {
             selection();
             crossover();
-           //mutation(MUTATION_PROBABILITY);
-
-            //getBestGraph(this.population);
-            //showBestGraph(getBestGraph(population));
-            System.out.println("Generation best: " + getBestGraph(population).fitnessScore);
+            mutation(MUTATION_PROBABILITY);
+            calculateFitness();
+            generationSnapshots.add(getBestGraph(population));
+            System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
             iterations--;
+            generation++;
         }
+        shutdownAndAwaitTermination(executor);
         long elapsedTime = System.currentTimeMillis() - startTime;
-        //displayElapsedTime(elapsedTime);
-        System.out.println("Total for gen: " +iterations + " took " +elapsedTime);
+        System.out.println("Total for gen: " + generation + " took " + elapsedTime);
+        animateGenerations();
 
     }
+
+    private void animateGenerations() {
+        Timer timer = new Timer(1000, null);
+        final int[] index = {0}; // AtomicInteger index = new AtomicInteger(0);
+        JFrame frame = new JFrame("Graph Display");
+        frame.add(renderer);
+
+        timer.addActionListener(e -> {
+            if (index[0] < generationSnapshots.size()) {
+                showBestGraph(generationSnapshots.get(index[0])); //index.get()
+                index[0]++;
+                //index.incrementAndGet();
+            } else {
+                ((Timer) e.getSource()).stop(); // Stop the timer
+            }
+        });
+        frame.setSize(initialGraph.getW(), initialGraph.getH());
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+        timer.start();
+    }
+
     private void showBestGraph(Graph bestGraph) {
         SwingUtilities.invokeLater(() -> renderer.setGraph(bestGraph));
     }
@@ -160,10 +172,27 @@ public class GeneticAlgorithm {
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
         return population.getLast();
     }
-    private void displayElapsedTime(long elapsedTime) {
+
+    private void shutdownAndAwaitTermination(ExecutorService executor) {
+        executor.shutdown(); // Disable new tasks
+        try {
+            // Wait for existing tasks to terminate
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                System.err.println("Executor did not terminate in the specified time.");
+                // Cancel currently executing tasks
+                executor.shutdownNow();
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS))
+                    System.err.println("Executor did not terminate II time.");
+            }
+        } catch (InterruptedException ie) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    /*private void displayElapsedTime(long elapsedTime) {
         JFrame frame = new JFrame();
         String message = String.format("Time: %d milliseconds", elapsedTime);
         JOptionPane.showMessageDialog(frame, message, "Computation Time", JOptionPane.INFORMATION_MESSAGE);
-    }
+    }*/
 
 }

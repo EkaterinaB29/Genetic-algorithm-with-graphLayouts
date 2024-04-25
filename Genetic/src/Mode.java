@@ -1,6 +1,4 @@
 public enum Mode {
-        SEQUENTIAL,
-        PARALLEL,
-        DISTRIBUTIVE
+    SEQUENTIAL, PARALLEL, DISTRIBUTIVE
 }
 

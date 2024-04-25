@@ -12,11 +12,7 @@ public final class Edge {
     }
 
     public boolean intersects(Edge other, ArrayList<Node> nodes) {
-        return linesIntersect(
-                nodes.get(other.origin).getX(), nodes.get(other.destination).getY(),
-                nodes.get(this.origin).getX(), nodes.get(this.destination).getY(),
-                other.getOrigin(nodes).getX(), other.getOrigin(nodes).getY(),
-                other.getDestination(nodes).getX(), other.getDestination(nodes).getY());
+        return linesIntersect(nodes.get(other.origin).getX(), nodes.get(other.destination).getY(), nodes.get(this.origin).getX(), nodes.get(this.destination).getY(), other.getOrigin(nodes).getX(), other.getOrigin(nodes).getY(), other.getDestination(nodes).getX(), other.getDestination(nodes).getY());
     }
 
     public Node getOrigin(ArrayList<Node> nodes) {
