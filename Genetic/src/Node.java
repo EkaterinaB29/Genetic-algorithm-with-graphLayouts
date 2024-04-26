@@ -36,11 +36,4 @@ class Node {
         return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 
-    public static Node moveNode(Node one, double value1, double value2) {
-        one.x = value1; // move the node to a random position according width
-        one.y = value2; // move the node to a random position according height
-        return one;
-    }
-
-
 }

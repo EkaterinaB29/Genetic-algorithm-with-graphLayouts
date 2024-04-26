@@ -11,7 +11,7 @@ public class GeneticAlgorithm {
     ArrayList<Graph> population = new ArrayList<>();
     private final Graph initialGraph;
     private final int populationSize;
-    int iterations = 10;
+    int iterations = 1;
     int generation = 0;
 
     //synchronization tools & other parameters
@@ -26,9 +26,9 @@ public class GeneticAlgorithm {
 
     public GeneticAlgorithm(Graph initialGraph, int populationSize, Mode executionMode, int processorCount) {
         this.initialGraph = initialGraph;
-        this.renderer = new GraphPanel(initialGraph);
         this.populationSize = populationSize;
         initialGraphPopulation(initialGraph);
+        this.renderer = new GraphPanel(initialGraph);
         this.executionMode = executionMode;
         this.processorCount = processorCount;
         this.executor = Executors.newFixedThreadPool(processorCount);
@@ -126,7 +126,7 @@ public class GeneticAlgorithm {
         calculateFitness();
         generationSnapshots.add(initialGraph);
         System.out.println("initial graph fitness: " + initialGraph.getFitnessScore());
-        while (iterations != 0) {
+       /* while (iterations != 0) {
             selection();
             crossover();
             mutation(MUTATION_PROBABILITY);
@@ -135,7 +135,7 @@ public class GeneticAlgorithm {
             System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
             iterations--;
             generation++;
-        }
+        }*/
         shutdownAndAwaitTermination(executor);
         long elapsedTime = System.currentTimeMillis() - startTime;
         System.out.println("Total for gen: " + generation + " took " + elapsedTime);
@@ -145,7 +145,7 @@ public class GeneticAlgorithm {
 
     private void animateGenerations() {
         Timer timer = new Timer(1000, null);
-        final int[] index = {0}; // AtomicInteger index = new AtomicInteger(0);
+        final int[] index = {0}; //AtomicInteger index = new AtomicInteger(0);
         JFrame frame = new JFrame("Graph Display");
         frame.add(renderer);
 
@@ -189,10 +189,5 @@ public class GeneticAlgorithm {
             Thread.currentThread().interrupt();
         }
     }
-    /*private void displayElapsedTime(long elapsedTime) {
-        JFrame frame = new JFrame();
-        String message = String.format("Time: %d milliseconds", elapsedTime);
-        JOptionPane.showMessageDialog(frame, message, "Computation Time", JOptionPane.INFORMATION_MESSAGE);
-    }*/
 
 }

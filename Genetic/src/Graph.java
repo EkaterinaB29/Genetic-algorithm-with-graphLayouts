@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 class Graph extends JPanel {
 
@@ -26,6 +27,7 @@ class Graph extends JPanel {
         this.h = h;
         this.w = w;
         addNodes();
+
     }
 
     //another constructor so it will know which one to use
@@ -72,28 +74,21 @@ class Graph extends JPanel {
         return nodes;
     }
 
-    public Node getNodeId(int id) {
-        for (Node node : nodes) {
-            if (node.getId() == id) return node;
-        }
-        return null;
-    }
-
     // method to add nodes
     public void addNodes() {
         int id = 0;
         while (getNodes().size() < numNodes) {
             double x = random.nextInt(w); //bound so it is visible
             double y = random.nextInt(h);
-            Node node = new Node(id, x, y);
             boolean flag = false;
             for (Node n : getNodes()) {
                 // if coordinates have  already been assigned
-                if (n.x == x && n.y == y) {
+                if (n.x == x + 1 && n.y == y + 1) {
                     flag = true;
                     break;
                 }
             }
+            Node node = new Node(id, x, y);
             if (!flag) {
                 getNodes().add(node);
                 id++;
@@ -106,77 +101,44 @@ class Graph extends JPanel {
         return getNodes().get(randomIndex);
     }
 
-    public double minimumDistanceNeighbour(Node startNode) {
-        double minDistance = Double.MAX_VALUE;
-        this.edges.forEach(edge -> {
-            if (edge.getOrigin(nodes) == startNode || edge.getDestination(nodes) == startNode) {
-                double edgeLength = Node.euclideanDistance(edge.getOrigin(nodes), edge.getDestination(nodes));
-                getLengths().add(edgeLength); // add the length of the newly created edge
-            }
-        });
-        if (!getLengths().isEmpty()) {
-            minDistance = Collections.min(getLengths());
-        }
-        return minDistance;
+    public double minimumDistanceNeighbourSum() {
+        double totalMinDistance;
+        totalMinDistance = nodes.stream().mapToDouble(currentNode -> {
+            // Stream through edges to find the minimum distance for the current node
+            return edges.stream().filter(edge -> (edge.getOrigin(nodes) == currentNode || edge.getDestination(nodes) == currentNode) && edge.getOrigin(nodes) != edge.getDestination(nodes)).mapToDouble(edge -> Node.euclideanDistance(edge.getOrigin(nodes), edge.getDestination(nodes))).min().orElse(Double.MAX_VALUE);
+        }).sum();
+
+        return totalMinDistance;
     }
 
-    /*
-    * Minimum Node Distance Sum: The distance of each node from its
-    * near-est neighbour is measured, and the distances are added up. The bigger
-    sum the more evenly the nodes are usually distributed over the
-    drawing area.*/
-    public double minimumNodeDistanceSum() {
-        double sum = 0;
-        for (Node node : nodes) {
-            sum += minimumDistanceNeighbour(node);
-        }
-        return sum;
-    }
-
-    /*Edge Length Deviation: The length of each edge is measured and
-    compared to the ”optimal”edge length, which is little more than
-    the minimum edge length found from the present layout.*/
-    ///*assuming here that the true value is the optimal value so the deviation will be
-    //* calculated as a difference between the value of the edge minus optimalEdgeLength
     public void fitnessEvaluation() {
-        double minNodeDist = minimumNodeDistanceSum();
-        minNodeDist = (minNodeDist == 0) ? Double.MAX_VALUE : minNodeDist;
-
-        double minNodeDist2 = Math.pow(minNodeDist, 2.0);
+        double minNodeDist = minimumDistanceNeighbourSum();
+        //TODO ASK ABOUT THIS how much is little more?
+        minNodeDist = (minNodeDist <= 0 || minNodeDist == Double.MAX_VALUE) ? 1 : minNodeDist;
         double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
-
-        double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * minNodeDist2 * numNodes) - edgeCross;
+        double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * Math.min(minNodeDist * minNodeDist, Double.MAX_VALUE) * numNodes) - edgeCross;
         double diff = Math.max(0, calculatedDiff);
-
         this.fitnessScore = Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
+
     }
-    /*
-    private double minimumNodeDistanceSum() {
-        double sum = 0;
-        for (Node node : nodes) {
-            sum += nodes.stream()
-                    .filter(other -> !other.equals(node))
-                    .mapToDouble(other -> Node.euclideanDistance(node, other))
-                    .min()
-                    .orElse(Double.MAX_VALUE);
-        }
-        return sum;
-    }*/
+
     private double edgeLengthDeviation() {
-        double optimalEdgeLength = edges.stream().mapToDouble(e -> Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes))).min().orElse(Double.MAX_VALUE) + 5; //Method that counts edge crossings TODO RESTRUCTURE
-        return edges.stream().mapToDouble(e -> Math.pow(Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes)) - optimalEdgeLength, 2)).average().orElse(Double.MAX_VALUE);
+        double optimalEdgeLength = this.edges.stream().mapToDouble(e -> Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes))).min().orElse(Double.MAX_VALUE) + 5;
+        return this.edges.stream().mapToDouble(e -> Math.pow(Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes)) - optimalEdgeLength, 2)).average().orElse(Double.MAX_VALUE);
     }
 
     public double edgeCrossings() {
         double edgeCross = 0;
         int i = 0;
+        List<Edge> edgeList = new ArrayList<>(edges);  // Convert HashSet to ArrayList
+
         while (i < this.getEdges().size() - 1) {
             //  first edge - first pair
-            Edge edge1 = edges.get(i);
+            Edge edge1 = edgeList.get(i);
             int j = i + 1;
             while (j < this.getEdges().size()) {
-                Edge edge2 = edges.get(j);
+                Edge edge2 = edgeList.get(j);
                 if (edge1.intersects(edge2, nodes)) {
                     edgeCross++;
                 }
@@ -185,9 +147,11 @@ class Graph extends JPanel {
             i++;
 
         }
+
         return edgeCross;
     }
     //mutation on a single Node TODO RESTRUCTURE!
+
     /***
      public Graph mutationNew() {
      Node randomNode = this.getRandomNode();
@@ -217,13 +181,13 @@ class Graph extends JPanel {
             double newX = (radius * Math.cos(angle * Math.PI / 180)) + randomNode.getX();
             double newY = (radius * Math.sin(angle * Math.PI / 180)) + randomNode.getY();
             // Ensure the new position is within bounds
-            randomNode.x = Math.max(0, Math.min(w, newX));
-            randomNode.y = Math.max(0, Math.min(h, newY));
-            Node.moveNode(randomNode, newX, newY); //redundant
+            randomNode.x = Math.max(0, Math.min(w - 1, newX));
+            randomNode.y = Math.max(0, Math.min(h - 1, newY));
 
         });
         return this;
     }
+
 
 }
 

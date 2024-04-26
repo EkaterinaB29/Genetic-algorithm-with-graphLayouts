@@ -5,7 +5,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
@@ -75,13 +77,20 @@ public class Window extends JFrame implements ActionListener {
             int windowHeight = Integer.parseInt(heightField.getText());
             int windowWidth = Integer.parseInt(widthField.getText());
             Random random = new Random();
-            ArrayList<Edge> edges = new ArrayList<>();
+
+            HashSet<Edge> uniqueEdges = new HashSet<>();
+
             for (int i = 0; i < numEdges; i++) {
                 int origin = random.nextInt(numNodes);
-                int destination = (1 + origin + random.nextInt(numNodes)) % numNodes;
-                edges.add(new Edge(origin, destination));
+                int destination = random.nextInt(numNodes);
+                while (destination == origin || uniqueEdges.contains(new Edge(origin, destination))) {
+                    //TODO PROBLEM IF COMPLETE GRAPH
+                    destination = random.nextInt(numNodes);
+                }
+                uniqueEdges.add(new Edge(origin, destination));
             }
 
+            ArrayList<Edge> edges = new ArrayList<>(uniqueEdges);
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();

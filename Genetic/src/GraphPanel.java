@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 
 class GraphPanel extends JPanel {
     private Graph graph;
@@ -32,12 +33,13 @@ class GraphPanel extends JPanel {
 
         // Draw edges
         g.setColor(new Color(125, 10, 200));
+
         int i = 0;
 
         while (i < graph.getEdges().size()) {
+
             Node start = graph.getEdges().get(i).getOrigin(graph.nodes);
             Node end = graph.getEdges().get(i).getDestination(graph.nodes);
-
             int x = (int) (scaleX * (start.getX() + offsetX));
             int y = (int) (scaleY * (start.getY() + offsetY));
             int width = (int) (scaleX * (end.getX() + offsetX));
@@ -58,6 +60,7 @@ class GraphPanel extends JPanel {
         g.setColor(Color.BLACK);
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
         g.drawString("Fitness score:" + graph.fitnessScore, 10, 20);
+
 
     }
 
