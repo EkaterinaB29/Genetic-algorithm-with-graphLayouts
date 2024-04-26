@@ -1,6 +1,8 @@
 import javax.swing.*;
-import javax.swing.Timer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -11,25 +13,23 @@ public class GeneticAlgorithm {
     ArrayList<Graph> population = new ArrayList<>();
     private final Graph initialGraph;
     private final int populationSize;
-    int iterations = 1;
+    int iterations = 10;
     int generation = 0;
 
     //synchronization tools & other parameters
     static Random random = new Random();
     static final double MUTATION_PROBABILITY = 0.001;
-    private final Mode executionMode;
     int processorCount;
     private final ExecutorService executor;
     private final Semaphore semaphore;
     ArrayList<Graph> generationSnapshots = new ArrayList<>();
     GraphPanel renderer;
 
-    public GeneticAlgorithm(Graph initialGraph, int populationSize, Mode executionMode, int processorCount) {
+    public GeneticAlgorithm(Graph initialGraph, int populationSize,int processorCount) {
         this.initialGraph = initialGraph;
         this.populationSize = populationSize;
         initialGraphPopulation(initialGraph);
         this.renderer = new GraphPanel(initialGraph);
-        this.executionMode = executionMode;
         this.processorCount = processorCount;
         this.executor = Executors.newFixedThreadPool(processorCount);
         semaphore = new Semaphore(0);
@@ -104,7 +104,7 @@ public class GeneticAlgorithm {
         for (Graph graph : this.population) {
             executor.submit(() -> {
                 try {
-                    graph.fitnessEvaluation(); // Perform fitness evaluation
+                    graph.fitnessEvaluation();// Perform fitness evaluation
                     System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
                 } catch (Exception e) {
                     //System.err.println("Error during fitness evaluation: " + e.getMessage());
@@ -126,7 +126,7 @@ public class GeneticAlgorithm {
         calculateFitness();
         generationSnapshots.add(initialGraph);
         System.out.println("initial graph fitness: " + initialGraph.getFitnessScore());
-       /* while (iterations != 0) {
+        while (iterations != 0) {
             selection();
             crossover();
             mutation(MUTATION_PROBABILITY);
@@ -135,7 +135,7 @@ public class GeneticAlgorithm {
             System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
             iterations--;
             generation++;
-        }*/
+        }
         shutdownAndAwaitTermination(executor);
         long elapsedTime = System.currentTimeMillis() - startTime;
         System.out.println("Total for gen: " + generation + " took " + elapsedTime);

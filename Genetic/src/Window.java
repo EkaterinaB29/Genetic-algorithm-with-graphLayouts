@@ -1,13 +1,11 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 
 public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
@@ -94,8 +92,9 @@ public class Window extends JFrame implements ActionListener {
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
 
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
-            Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
-            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, mode, processors);
+            //Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
+
+            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p,processors);
             computation.compute();
 
 

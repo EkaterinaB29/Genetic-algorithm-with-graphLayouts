@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Objects;
 
 import static java.awt.geom.Line2D.linesIntersect;
 
@@ -15,7 +14,7 @@ public final class Edge {
     public boolean intersects(Edge other, ArrayList<Node> nodes) {
         return linesIntersect(nodes.get(other.origin).getX(), nodes.get(other.destination).getY(), nodes.get(this.origin).getX(), nodes.get(this.destination).getY(), other.getOrigin(nodes).getX(), other.getOrigin(nodes).getY(), other.getDestination(nodes).getX(), other.getDestination(nodes).getY());
     }
-    // Override equals() method to define equality based on origin and destination
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

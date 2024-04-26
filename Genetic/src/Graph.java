@@ -1,7 +1,6 @@
 import javax.swing.*;
-import java.awt.*;
-import java.util.*;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
 
 class Graph extends JPanel {
 
@@ -102,52 +101,67 @@ class Graph extends JPanel {
     }
 
     public double minimumDistanceNeighbourSum() {
-        double totalMinDistance;
-        totalMinDistance = nodes.stream().mapToDouble(currentNode -> {
-            // Stream through edges to find the minimum distance for the current node
-            return edges.stream().filter(edge -> (edge.getOrigin(nodes) == currentNode || edge.getDestination(nodes) == currentNode) && edge.getOrigin(nodes) != edge.getDestination(nodes)).mapToDouble(edge -> Node.euclideanDistance(edge.getOrigin(nodes), edge.getDestination(nodes))).min().orElse(Double.MAX_VALUE);
-        }).sum();
+        // Make sure that we have nodes to avoid Division by zero
+        if (nodes.isEmpty()) return 0.1;
+
+        double totalMinDistance = nodes.stream()
+                .mapToDouble(currentNode -> edges.stream()
+                        .filter(edge -> (edge.getOrigin(nodes) == currentNode || edge.getDestination(nodes) == currentNode)
+                                && edge.getOrigin(nodes) != edge.getDestination(nodes))
+                        .mapToDouble(edge -> Node.euclideanDistance(edge.getOrigin(nodes), edge.getDestination(nodes)))
+                        .min().orElse(0.1)) // If there are no edges, return a large number to avoid contributing to the fitness positively
+                .sum();
 
         return totalMinDistance;
     }
 
+
     public void fitnessEvaluation() {
         double minNodeDist = minimumDistanceNeighbourSum();
         //TODO ASK ABOUT THIS how much is little more?
-        minNodeDist = (minNodeDist <= 0 || minNodeDist == Double.MAX_VALUE) ? 1 : minNodeDist;
+        // Here, if minNodeDist is Double.MAX_VALUE, dividing by it will result in infinity.
+        // We must check for this and handle accordingly.
+        if (minNodeDist == 0.1) {
+            this.fitnessScore = 1; // or some penalty value to indicate a bad fitness
+            return;
+        }
+
         double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
-        double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * Math.min(minNodeDist * minNodeDist, Double.MAX_VALUE) * numNodes) - edgeCross;
-        double diff = Math.max(0, calculatedDiff);
-        this.fitnessScore = Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
 
+        /***  ASK HERE, DO I NEED TO HANDLE IT THIS WAY OR IF i PUT 1 IT WILL BE FINE?
+        if (edgeLenDev == Double.POSITIVE_INFINITY || edgeCross == Double.POSITIVE_INFINITY) {
+            this.fitnessScore = 1; // or some penalty value
+            return;
+        }**/
+
+        double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * Math.min(minNodeDist * minNodeDist, Double.MAX_VALUE)) - edgeCross;
+        double diff = Math.max(0, calculatedDiff);
+        this.fitnessScore = 1 + Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
     }
 
     private double edgeLengthDeviation() {
-        double optimalEdgeLength = this.edges.stream().mapToDouble(e -> Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes))).min().orElse(Double.MAX_VALUE) + 5;
+        double optimalEdgeLength = this.edges.stream().mapToDouble(e -> Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes))).min().orElse(Double.MAX_VALUE) + 5; // MAYBE CHANGE TO 1 ,THE DOUBLE.MAX
         return this.edges.stream().mapToDouble(e -> Math.pow(Node.euclideanDistance(e.getOrigin(nodes), e.getDestination(nodes)) - optimalEdgeLength, 2)).average().orElse(Double.MAX_VALUE);
     }
 
     public double edgeCrossings() {
         double edgeCross = 0;
         int i = 0;
-        List<Edge> edgeList = new ArrayList<>(edges);  // Convert HashSet to ArrayList
 
         while (i < this.getEdges().size() - 1) {
             //  first edge - first pair
-            Edge edge1 = edgeList.get(i);
+            Edge edge1 = this.getEdges().get(i);
             int j = i + 1;
             while (j < this.getEdges().size()) {
-                Edge edge2 = edgeList.get(j);
+                Edge edge2 = this.getEdges().get(j);
                 if (edge1.intersects(edge2, nodes)) {
                     edgeCross++;
                 }
                 j++;
             }
             i++;
-
         }
-
         return edgeCross;
     }
     //mutation on a single Node TODO RESTRUCTURE!
@@ -183,11 +197,8 @@ class Graph extends JPanel {
             // Ensure the new position is within bounds
             randomNode.x = Math.max(0, Math.min(w - 1, newX));
             randomNode.y = Math.max(0, Math.min(h - 1, newY));
-
         });
         return this;
     }
-
-
 }
 

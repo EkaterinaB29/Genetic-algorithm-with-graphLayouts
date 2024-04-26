@@ -1,5 +1,3 @@
-import java.util.Random;
-
 class Node {
 
     private final int id;
