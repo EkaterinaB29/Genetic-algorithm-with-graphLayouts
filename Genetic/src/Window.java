@@ -3,6 +3,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -12,8 +13,10 @@ public class Window extends JFrame implements ActionListener {
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
     private final int p = 100;
+    private String[] args;
 
-    public Window() {
+    public Window(String[] args) {
+        this.args = args;
         setTitle("Choose initial values!");
         setSize(600, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -75,7 +78,6 @@ public class Window extends JFrame implements ActionListener {
             int windowHeight = Integer.parseInt(heightField.getText());
             int windowWidth = Integer.parseInt(widthField.getText());
             Random random = new Random();
-
             HashSet<Edge> uniqueEdges = new HashSet<>();
 
             for (int i = 0; i < numEdges; i++) {
@@ -90,13 +92,14 @@ public class Window extends JFrame implements ActionListener {
 
             ArrayList<Edge> edges = new ArrayList<>(uniqueEdges);
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
-
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
-            //Mode mode = sequentialButton.isSelected() ? Mode.SEQUENTIAL : Mode.PARALLEL; // add for Distributive
-
             GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p,processors);
-            computation.compute();
-
+            if (distributiveButton.isSelected()) {
+                GeneticAlgorithmDistributed distributed = new GeneticAlgorithmDistributed(computation);
+                distributed.execute(args);
+            } else {
+                computation.compute();
+            }
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(null, "The values must be integers!");

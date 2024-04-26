@@ -12,7 +12,7 @@ public class GeneticAlgorithm {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private final Graph initialGraph;
-    private final int populationSize;
+    public final int populationSize;
     int iterations = 10;
     int generation = 0;
 
