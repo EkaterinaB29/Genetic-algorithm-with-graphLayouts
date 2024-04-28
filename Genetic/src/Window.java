@@ -12,11 +12,12 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
+    public Mode mode;
     private final int p = 100;
-    private String[] args;
+    //private String[] args;
 
-    public Window(String[] args) {
-        this.args = args;
+    public Window(/*String[] args*/) {
+        //this.args = args;
         setTitle("Choose initial values!");
         setSize(600, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -94,11 +95,13 @@ public class Window extends JFrame implements ActionListener {
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
             GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p,processors);
-            if (distributiveButton.isSelected()) {
-                GeneticAlgorithmDistributed distributed = new GeneticAlgorithmDistributed(computation);
-                distributed.execute(args);
+            if (sequentialButton.isSelected()){
+                    computation.compute();
+            } else if (parallelButton.isSelected()){
+                    computation.compute();
             } else {
-                computation.compute();
+                GeneticAlgorithmDistributed distributed = new GeneticAlgorithmDistributed(computation);
+                distributed.execute();
             }
 
         } catch (NumberFormatException ex) {

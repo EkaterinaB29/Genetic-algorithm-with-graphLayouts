@@ -13,13 +13,13 @@ public class GeneticAlgorithmDistributed {
 
     }
 
-    public void execute(String[] args) {
+    public void execute() {
         System.setProperty("mpj.np", "4");
-        MPI.Init(args); // Initialize the MPI environment
+         // Initialize the MPI environment
         int myRank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
         System.out.println("Hello from " + myRank + " of " + size);
-        System.out.println("arguments:"+args[0] +args[1]+args[2]+args[3]);
+        
         if (myRank == 0) {
             // This is the master process
             Master master = new Master(geneticAlgorithm);
