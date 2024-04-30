@@ -1,57 +1,57 @@
 import mpi.MPI;
+import mpi.MPIException;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class Master {
-    GeneticAlgorithm geneticAlgorithm;
+    private final GeneticAlgorithm geneticAlgorithm;
+    static final double MUTATION_PROBABILITY = 0.001;
 
     public Master(GeneticAlgorithm geneticAlgorithm) {
         this.geneticAlgorithm = geneticAlgorithm;
     }
 
-
     public void distributeWork() throws IOException {
-        // Distribute work to the workers
         int populationSize = geneticAlgorithm.populationSize;
-        int size = MPI.COMM_WORLD.Size(); //total number of processes in the communicator
-        int myRank = MPI.COMM_WORLD.Rank(); //rank of the calling process in the channel;address in netw
+        int size = MPI.COMM_WORLD.Size(); // Total number of processes in the communicator, including master
 
-        //byte[] serializedData = geneticAlgorithm.serialize(); // Serialize the GA instance
-        // Use MPI to distribute serializedData to worker processes
-
-        //Calculate the subPopulation size for each worker
+        // Calculate the subpopulation size for each worker including the master
         int chunkSize = populationSize / size;
         int remaining = populationSize % size;
 
-        for (int i = 0; i < size; i++) {
+        // The master node will also compute, so it needs its own subpopulation chunk
+        ArrayList<Graph> masterSubPopulation = new ArrayList<>(geneticAlgorithm.population.subList(0, chunkSize + (remaining > 0 ? 1 : 0)));
+        geneticAlgorithm.population = masterSubPopulation;
+
+        ArrayList<Graph> subPopulation = null;
+        for (int i = 1; i < size; i++) { // Start from 1 since the master is included in computation
             int startIndex = i * chunkSize + Math.min(i, remaining);
-            int endIndex = startIndex + chunkSize;
-            if (i < remaining) {
-                endIndex++;
-            }
+            int endIndex = startIndex + chunkSize + (i < remaining ? 1 : 0);
 
-            // Prepare the subpopulation for each worker
-            ArrayList<Graph> subPopulation = (ArrayList<Graph>) geneticAlgorithm.population.subList(startIndex, endIndex);
+            subPopulation = new ArrayList<>(geneticAlgorithm.population.subList(startIndex, endIndex));
 
-            //If we are master we send
-            if (myRank == 0) {
-                if (i > 0) {
-                    //send subpopulation to worker i
-                    //need of serialization convert the object into a byte stream ?
+            //Serialize subpopulation
+            byte[] serializedSubPopulation = serializeSubPopulation(subPopulation);
 
-                    MPI.COMM_WORLD.Send(subPopulation, 0, subPopulation.size(), MPI.OBJECT, i, 0);
-                }
-            } else if (myRank == i) {
-                // Worker receives its subpopulation
-                // need of deserialization convert the byte stream back into an object ?
-                MPI.COMM_WORLD.Recv(subPopulation, 0, subPopulation.size(), MPI.OBJECT, 0, 0);
-            }
+            // Send subpopulation to worker i
+            MPI.COMM_WORLD.Send(serializedSubPopulation, 0, serializedSubPopulation.length, MPI.BYTE, i, 0);
         }
 
+        geneticAlgorithm.calculateFitness();
+        geneticAlgorithm.selection();
+        geneticAlgorithm.crossover();
+        geneticAlgorithm.mutation(MUTATION_PROBABILITY);
     }
 
-    public void collectResults() {
-        // Collect results from the workers
+    // Serialization helper method remains the same
+    private byte[] serializeSubPopulation(List<Graph> subPopulation) throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(subPopulation);
+            return bos.toByteArray();
+        }
     }
+
 }

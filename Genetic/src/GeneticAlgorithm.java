@@ -81,7 +81,7 @@ public class GeneticAlgorithm implements Serializable {
             parent1.getNodes().sort(Comparator.comparingInt(Node::getId));
             parent2.getNodes().sort(Comparator.comparingInt(Node::getId));
 
-            int separator = random.nextInt(parent2.getNodes().size());
+            int separator = random.nextInt(parent2.getNodes().size()); //so we always have a bound
             ArrayList<Node> firstChildNodes = new ArrayList<>(parent2.getNodes().subList(0, separator + 1));
             firstChildNodes.addAll(parent1.getNodes().subList(separator + 1, parent1.getNodes().size()));
 
