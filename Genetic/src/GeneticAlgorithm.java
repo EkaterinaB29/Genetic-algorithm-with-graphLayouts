@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class GeneticAlgorithm {
+public class GeneticAlgorithm implements Serializable {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private final Graph initialGraph;
@@ -20,20 +21,25 @@ public class GeneticAlgorithm {
     static Random random = new Random();
     static final double MUTATION_PROBABILITY = 0.001;
     int processorCount;
-    private final ExecutorService executor;
-    private final Semaphore semaphore;
+    transient private ExecutorService executor;
+    transient private Semaphore semaphore;
     ArrayList<Graph> generationSnapshots = new ArrayList<>();
     GraphPanel renderer;
 
-    public GeneticAlgorithm(Graph initialGraph, int populationSize,int processorCount) {
+    public GeneticAlgorithm(Graph initialGraph, int populationSize, int processorCount) {
         this.initialGraph = initialGraph;
         this.populationSize = populationSize;
         initialGraphPopulation(initialGraph);
         this.renderer = new GraphPanel(initialGraph);
         this.processorCount = processorCount;
-        this.executor = Executors.newFixedThreadPool(processorCount);
-        semaphore = new Semaphore(0);
 
+
+    }
+
+    private void initializeTransientFields(int processorCount) {
+        // Initialize the ExecutorService and Semaphore here
+        this.executor = Executors.newFixedThreadPool(processorCount);
+        this.semaphore = new Semaphore(0);
     }
 
     // function to create the population of graphs according to the first one
@@ -41,6 +47,13 @@ public class GeneticAlgorithm {
         for (int i = 0; i < populationSize; i++) {
             this.population.add(new Graph(initialGraph.nodes, initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
         }
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject(); // Deserialization
+        this.executor = Executors.newFixedThreadPool(processorCount);
+        this.semaphore = new Semaphore(0);
     }
 
     public void selection() {
@@ -68,15 +81,13 @@ public class GeneticAlgorithm {
             parent1.getNodes().sort(Comparator.comparingInt(Node::getId));
             parent2.getNodes().sort(Comparator.comparingInt(Node::getId));
 
-            int separator = random.nextInt(parent2.getNodes().size()); //so we always have a bound
-            // For nodes, use subList to avoid creating new objects
+            int separator = random.nextInt(parent2.getNodes().size());
             ArrayList<Node> firstChildNodes = new ArrayList<>(parent2.getNodes().subList(0, separator + 1));
             firstChildNodes.addAll(parent1.getNodes().subList(separator + 1, parent1.getNodes().size()));
 
             ArrayList<Node> secondChildNodes = new ArrayList<>(parent1.getNodes().subList(0, separator + 1));
             secondChildNodes.addAll(parent2.getNodes().subList(separator + 1, parent2.getNodes().size()));
 
-            // Create new Graph objects for the children
             children.add(new Graph(firstChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
             children.add(new Graph(secondChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
         }
@@ -99,7 +110,7 @@ public class GeneticAlgorithm {
     public void calculateFitness() {
         System.out.print("Calculating fitness");
         long now = System.currentTimeMillis();
-
+        initializeTransientFields(processorCount);
         semaphore.drainPermits(); //
         for (Graph graph : this.population) {
             executor.submit(() -> {
@@ -148,7 +159,6 @@ public class GeneticAlgorithm {
         final int[] index = {0}; //AtomicInteger index = new AtomicInteger(0);
         JFrame frame = new JFrame("Graph Display");
         frame.add(renderer);
-
         timer.addActionListener(e -> {
             if (index[0] < generationSnapshots.size()) {
                 showBestGraph(generationSnapshots.get(index[0])); //index.get()
@@ -174,12 +184,11 @@ public class GeneticAlgorithm {
     }
 
     private void shutdownAndAwaitTermination(ExecutorService executor) {
-        executor.shutdown(); // Disable new tasks
+        executor.shutdown();
         try {
             // Wait for existing tasks to terminate
             if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
                 System.err.println("Executor did not terminate in the specified time.");
-                // Cancel currently executing tasks
                 executor.shutdownNow();
                 if (!executor.awaitTermination(60, TimeUnit.SECONDS))
                     System.err.println("Executor did not terminate II time.");

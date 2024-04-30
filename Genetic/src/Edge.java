@@ -1,8 +1,9 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import static java.awt.geom.Line2D.linesIntersect;
 
-public final class Edge {
+public final class Edge implements Serializable {
     int origin;
     int destination;
 

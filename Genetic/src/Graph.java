@@ -1,8 +1,9 @@
 import javax.swing.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
-class Graph extends JPanel {
+class Graph extends JPanel implements Serializable {
 
     public double fitnessScore;
     ArrayList<Node> nodes;
@@ -13,7 +14,6 @@ class Graph extends JPanel {
     public int h;
     public int w;
     static Random random = new Random();
-    //private Map<Node, Point> nodePositions;
 
     // constructor
     public Graph(int n, ArrayList<Edge> edges, int h, int w) {

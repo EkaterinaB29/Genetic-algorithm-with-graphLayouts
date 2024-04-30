@@ -3,10 +3,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
+
 
 public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
@@ -14,10 +15,9 @@ public class Window extends JFrame implements ActionListener {
     private JButton runButton;
     public Mode mode;
     private final int p = 100;
-    //private String[] args;
 
-    public Window(/*String[] args*/) {
-        //this.args = args;
+
+    public Window() {
         setTitle("Choose initial values!");
         setSize(600, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -94,20 +94,79 @@ public class Window extends JFrame implements ActionListener {
             ArrayList<Edge> edges = new ArrayList<>(uniqueEdges);
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
-            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p,processors);
-            if (sequentialButton.isSelected()){
-                    computation.compute();
-            } else if (parallelButton.isSelected()){
-                    computation.compute();
+            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, processors);
+            if (sequentialButton.isSelected()) {
+                computation.compute();
+            } else if (parallelButton.isSelected()) {
+                computation.compute();
             } else {
-                GeneticAlgorithmDistributed distributed = new GeneticAlgorithmDistributed(computation);
-                distributed.execute();
+                String filePath = serializeData(computation);
+                executeDistributiveComputation(filePath);
+
             }
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(null, "The values must be integers!");
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
+
+    private void executeDistributiveComputation(String filePath) {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                String scriptPath = "/home/ekaterina/Desktop/Genetic/mpjrun.sh";
+                String[] command = {scriptPath, filePath};
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
+                // Read output from the process in a background thread
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
+                // Wait for the process to complete and check for errors
+                int exitCode = process.waitFor();
+                if (exitCode != 0) {
+                    throw new IOException("mpjrun.sh exited with code " + exitCode);
+                }
+                return null;
+            }
+            /*
+            @Override
+            protected void done() {
+                try {
+                    get(); // call get to rethrow exceptions from doInBackground
+                    // Update GUI with results here or open new GUI window with results
+                    showResults();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Failed to execute distributive computation.");
+                }
+            }*/
+        };
+        worker.execute(); // This will run the SwingWorker
+    }
+
+    /*private void showResults() {
+        // Code to update GUI or show a new dialog with the results
+    }*/
+
+    public String serializeData(GeneticAlgorithm geneticAlgorithm) throws IOException {
+        String currentDir = System.getProperty("user.dir");
+        File newFile = new File(currentDir, "object.ser");
+        //serialize the GeneticAlgorithm object
+        try (FileOutputStream fileOut = new FileOutputStream(newFile); ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
+            out.writeObject(geneticAlgorithm);
+        }
+        // Delete
+        //newFile.deleteOnExit();
+        return newFile.getAbsolutePath();
+    }
+
 }
 
 

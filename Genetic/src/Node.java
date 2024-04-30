@@ -1,4 +1,6 @@
-class Node {
+import java.io.Serializable;
+
+class Node implements Serializable {
 
     private final int id;
     public double x;

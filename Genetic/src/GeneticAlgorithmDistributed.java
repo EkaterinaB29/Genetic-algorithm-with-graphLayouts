@@ -1,45 +1,43 @@
-import mpi.MPI;
+import mpi.*;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-
-import static mpi.MPI.Init;
+import java.io.ObjectInputStream;
 
 public class GeneticAlgorithmDistributed {
 
-    private final GeneticAlgorithm geneticAlgorithm;
-
-    public GeneticAlgorithmDistributed(GeneticAlgorithm geneticAlgorithm) {
-        this.geneticAlgorithm = geneticAlgorithm;
-
-    }
-
-    public void execute() {
-        System.setProperty("mpj.np", "4");
-         // Initialize the MPI environment
+    public static void main(String[] args) throws ClassNotFoundException, IOException {
+        MPI.Init(args);
         int myRank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
-        System.out.println("Hello from " + myRank + " of " + size);
-        
+        System.out.println("Hello from process " + myRank + " of " + size);
+        // Deserialize the object from the file
+        GeneticAlgorithm geneticAlgorithm = deserializeData(args[args.length - 1]);
         if (myRank == 0) {
-            // This is the master process
+            // Master process
             Master master = new Master(geneticAlgorithm);
             master.distributeWork();
-            //master.collectResults();
-            // Other master-related tasks
+
         } else {
-            // This is a worker process
+            // Worker process
             Worker worker = new Worker(geneticAlgorithm);
             try {
                 worker.receivePopulationChunk();
-            } catch (Exception e) {
+            } catch (MPIException e) {
                 e.printStackTrace();
             }
-            //worker.calculateFitnessForSubset();
 
         }
 
+        MPI.Finalize();
+    }
 
-        MPI.Finalize(); // Clean the environment
+    public static GeneticAlgorithm deserializeData(String filePath) throws IOException, ClassNotFoundException {
+        GeneticAlgorithm geneticAlgorithm;
+        try (FileInputStream fileIn = new FileInputStream(filePath); ObjectInputStream in = new ObjectInputStream(fileIn)) {
+            geneticAlgorithm = (GeneticAlgorithm) in.readObject();
+        }
+        return geneticAlgorithm;
     }
 
 }

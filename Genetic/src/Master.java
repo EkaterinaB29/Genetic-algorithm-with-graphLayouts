@@ -1,5 +1,6 @@
 import mpi.MPI;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Master {
@@ -9,11 +10,15 @@ public class Master {
         this.geneticAlgorithm = geneticAlgorithm;
     }
 
-    public void distributeWork() {
+
+    public void distributeWork() throws IOException {
         // Distribute work to the workers
         int populationSize = geneticAlgorithm.populationSize;
         int size = MPI.COMM_WORLD.Size(); //total number of processes in the communicator
         int myRank = MPI.COMM_WORLD.Rank(); //rank of the calling process in the channel;address in netw
+
+        //byte[] serializedData = geneticAlgorithm.serialize(); // Serialize the GA instance
+        // Use MPI to distribute serializedData to worker processes
 
         //Calculate the subPopulation size for each worker
         int chunkSize = populationSize / size;
