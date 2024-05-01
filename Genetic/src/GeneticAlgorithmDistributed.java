@@ -16,8 +16,7 @@ public class GeneticAlgorithmDistributed {
         if (myRank == 0) {
             // Master process
             Master master = new Master(geneticAlgorithm);
-            master.distributeWork();
-
+            master.execute();
         } else {
             // Worker process
             Worker worker = new Worker(geneticAlgorithm);

@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit;
 public class GeneticAlgorithm implements Serializable {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
-    private final Graph initialGraph;
+    private Graph initialGraph;
     public final int populationSize;
-    int iterations = 10;
+    int iterations = 1;
     int generation = 0;
 
     //synchronization tools & other parameters
@@ -154,7 +154,7 @@ public class GeneticAlgorithm implements Serializable {
 
     }
 
-    private void animateGenerations() {
+    public void animateGenerations() {
         Timer timer = new Timer(1000, null);
         final int[] index = {0}; //AtomicInteger index = new AtomicInteger(0);
         JFrame frame = new JFrame("Graph Display");
@@ -174,11 +174,11 @@ public class GeneticAlgorithm implements Serializable {
         timer.start();
     }
 
-    private void showBestGraph(Graph bestGraph) {
+    public void showBestGraph(Graph bestGraph) {
         SwingUtilities.invokeLater(() -> renderer.setGraph(bestGraph));
     }
 
-    private Graph getBestGraph(ArrayList<Graph> population) {
+    public Graph getBestGraph(ArrayList<Graph> population) {
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
         return population.getLast();
     }
@@ -199,4 +199,34 @@ public class GeneticAlgorithm implements Serializable {
         }
     }
 
+    public static byte[] serializeSubPopulation(ArrayList<Graph> subPopulation) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(subPopulation);
+        oos.flush();
+        oos.close();
+        return bos.toByteArray();
+    }
+
+
+    public static ArrayList<Graph> deserializeSubPopulation(byte[] serializedSubPopulation, int length) throws IOException, ClassNotFoundException {
+        if (serializedSubPopulation.length == 0 || serializedSubPopulation.length != length) {
+            throw new IOException("Invalid or corrupted data received for deserialization.");
+        }
+
+        ArrayList<Graph> subPopulation;
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedSubPopulation);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+            subPopulation = (ArrayList<Graph>) ois.readObject();
+        } catch (StreamCorruptedException sce) {
+            System.err.println("Failed to deserialize data: " + sce.getMessage());
+            throw sce;
+        }
+        return subPopulation;
+    }
+
+
+    public Graph getInitialGraph() {
+        return initialGraph;
+    }
 }
