@@ -10,7 +10,6 @@ public class GeneticAlgorithmDistributed {
         MPI.Init(args);
         int myRank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
-        System.out.println("Hello from process " + myRank + " of " + size);
         // Deserialize the object from the file
         GeneticAlgorithm geneticAlgorithm = deserializeData(args[args.length - 1]);
         if (myRank == 0) {
@@ -20,11 +19,7 @@ public class GeneticAlgorithmDistributed {
         } else {
             // Worker process
             Worker worker = new Worker(geneticAlgorithm);
-            try {
-                worker.receivePopulationChunk();
-            } catch (MPIException e) {
-                e.printStackTrace();
-            }
+            worker.receivePopulationChunk();
 
         }
 

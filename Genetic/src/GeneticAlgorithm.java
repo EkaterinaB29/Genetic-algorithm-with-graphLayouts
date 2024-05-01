@@ -13,7 +13,7 @@ public class GeneticAlgorithm implements Serializable {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private Graph initialGraph;
-    public final int populationSize;
+    public int populationSize;
     int iterations = 1;
     int generation = 0;
 
