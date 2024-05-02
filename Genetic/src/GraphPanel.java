@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.QuadCurve2D;
+import java.awt.geom.Ellipse2D;
 
 class GraphPanel extends JPanel {
     private Graph graph;
@@ -11,62 +13,61 @@ class GraphPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        super.setSize(graph.getW(), graph.getH());
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        setBackground(new Color(237, 210, 225, 242)); // Set a light background
 
-        double edge = 50;
-        double minx = graph.getNodes().getFirst().x;
-        double miny = graph.getNodes().getFirst().y;
-        double maxx = minx;
-        double maxy = miny;
+        // Setup scaling and offset based on node positions
+        double edgePadding = 50;
+        double minx = Double.MAX_VALUE, maxx = Double.MIN_VALUE;
+        double miny = Double.MAX_VALUE, maxy = Double.MIN_VALUE;
         for (Node node : graph.getNodes()) {
-            if (node.getX() > maxx) maxx = node.getX();
-            if (node.getX() < minx) minx = node.getX();
-            if (node.getY() > maxy) maxy = node.getY();
-            if (node.getY() < miny) miny = node.getY();
+            minx = Math.min(minx, node.getX());
+            maxx = Math.max(maxx, node.getX());
+            miny = Math.min(miny, node.getY());
+            maxy = Math.max(maxy, node.getY());
         }
 
-        double scaleX = graph.getW() / (maxx - minx + 2 * edge);
-        double scaleY = graph.getH() / (maxy - miny + 2 * edge);
-        double offsetX = -minx + edge;
-        double offsetY = -miny + edge;
+        double scaleX = (getWidth() - 2 * edgePadding) / (maxx - minx);
+        double scaleY = (getHeight() - 2 * edgePadding) / (maxy - miny);
+        double offsetX = edgePadding - minx * scaleX;
+        double offsetY = edgePadding - miny * scaleY;
 
-        // Draw edges
-        g.setColor(new Color(125, 10, 200));
+        // Draw edges with curved paths
+        for (Edge edge : graph.getEdges()) {
+            Node start = edge.getOrigin(graph.getNodes());
+            Node end = edge.getDestination(graph.getNodes());
+            int x1 = (int) (start.getX() * scaleX + offsetX);
+            int y1 = (int) (start.getY() * scaleY + offsetY);
+            int x2 = (int) (end.getX() * scaleX + offsetX);
+            int y2 = (int) (end.getY() * scaleY + offsetY);
 
-        int i = 0;
-
-        while (i < graph.getEdges().size()) {
-
-            Node start = graph.getEdges().get(i).getOrigin(graph.nodes);
-            Node end = graph.getEdges().get(i).getDestination(graph.nodes);
-            int x = (int) (scaleX * (start.getX() + offsetX));
-            int y = (int) (scaleY * (start.getY() + offsetY));
-            int width = (int) (scaleX * (end.getX() + offsetX));
-            int height = (int) (scaleY * (end.getY() + offsetY));
-            g.drawLine(x, y, width, height);
-            i++;
+            QuadCurve2D.Float curve = new QuadCurve2D.Float(x1, y1, (x1 + x2) / 2, ((y1 + y2) / 2) - 60, x2, y2);
+            g2d.setStroke(new BasicStroke(2)); // Thicker line for better visibility
+            g2d.setPaint(new GradientPaint(x1, y1, new Color(0xFFDC5896, true), x2, y2, new Color(0xDAD82277, true), true));
+            g2d.draw(curve);
         }
 
-        // Draw nodes
-        g.setColor(new Color(150, 0, 50));
+        // Draw nodes as filled circles with labels
         for (Node node : graph.getNodes()) {
-            double x = scaleX * (node.getX() + offsetX);
-            double y = scaleY * (node.getY() + offsetY);
-            g.fillOval((int) x - 5, (int) y - 5, 15, 15);
-            g.drawString("" + node.getId(), (int) x - 5, (int) y - 5);
+            int x = (int) (node.getX() * scaleX + offsetX);
+            int y = (int) (node.getY() * scaleY + offsetY);
+            g2d.setPaint(new Color(94, 10, 101, 255));
+            Ellipse2D.Double circle = new Ellipse2D.Double(x - 10, y - 10, 20, 20);
+            g2d.fill(circle);
+            g2d.setPaint(new Color(79, 8, 85, 213));
+            g2d.draw(circle);
+            g2d.drawString(""+node.getId(), x - 5, y - 15);
         }
 
-        g.setColor(Color.BLACK);
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        g.drawString("Fitness score:" + graph.fitnessScore, 10, 20);
-
-
+        // Fitness score
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.drawString("Fitness score: " + graph.getFitnessScore(), 10, 30);
     }
 
     public void setGraph(Graph bestGraph) {
         this.graph = bestGraph;
-        //this.revalidate();
-        this.repaint();
+        repaint();
     }
-
 }
