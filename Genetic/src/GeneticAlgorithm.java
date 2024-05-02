@@ -4,17 +4,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class GeneticAlgorithm implements Serializable {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private Graph initialGraph;
     public int populationSize;
-    int iterations = 1;
+    int iterations = 10;
     int generation = 0;
 
     //synchronization tools & other parameters
@@ -183,7 +180,7 @@ public class GeneticAlgorithm implements Serializable {
         return population.getLast();
     }
 
-    private void shutdownAndAwaitTermination(ExecutorService executor) {
+    public void shutdownAndAwaitTermination(ExecutorService executor) {
         executor.shutdown();
         try {
             // Wait for existing tasks to terminate
@@ -209,10 +206,7 @@ public class GeneticAlgorithm implements Serializable {
     }
 
 
-    public static ArrayList<Graph> deserializeSubPopulation(byte[] serializedSubPopulation, int length) throws IOException, ClassNotFoundException {
-        if (serializedSubPopulation.length == 0 || serializedSubPopulation.length != length) {
-            throw new IOException("Invalid or corrupted data received for deserialization.");
-        }
+    public static ArrayList<Graph> deserializeSubPopulation(byte[] serializedSubPopulation) throws IOException, ClassNotFoundException {
 
         ArrayList<Graph> subPopulation;
         try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedSubPopulation);
@@ -228,5 +222,8 @@ public class GeneticAlgorithm implements Serializable {
 
     public Graph getInitialGraph() {
         return initialGraph;
+    }
+    public ExecutorService getExecutor() {
+        return executor;
     }
 }
