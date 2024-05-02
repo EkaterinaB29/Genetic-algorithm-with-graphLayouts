@@ -30,6 +30,14 @@ class Node implements Serializable {
         return y;
     }
 
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
     public static double euclideanDistance(Node one, Node two) {
         double deltaX = one.getX() - two.getX();
         double deltaY = two.getY() - one.getY();

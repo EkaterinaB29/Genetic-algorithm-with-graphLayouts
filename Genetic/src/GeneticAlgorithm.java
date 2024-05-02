@@ -1,16 +1,16 @@
+import javax.swing.Timer;
 import javax.swing.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class GeneticAlgorithm implements Serializable {
+public class GeneticAlgorithm implements Serializable, GeneticOperations {
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private Graph initialGraph;
@@ -34,11 +34,9 @@ public class GeneticAlgorithm implements Serializable {
         this.renderer = new GraphPanel(initialGraph);
         this.processorCount = processorCount;
 
-
     }
 
     private void initializeTransientFields(int processorCount) {
-        // Initialize the ExecutorService and Semaphore here
         this.executor = Executors.newFixedThreadPool(processorCount);
         this.semaphore = new Semaphore(0);
     }
@@ -46,17 +44,11 @@ public class GeneticAlgorithm implements Serializable {
     // function to create the population of graphs according to the first one
     private void initialGraphPopulation(Graph initialGraph) {
         this.population.add(initialGraph);
-        for (int i = 0; i < populationSize-1; i++) {
+        for (int i = 0; i < populationSize - 1; i++) {
             this.population.add(new Graph(initialGraph.nodes, initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
         }
     }
 
-    @Serial
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject(); // Deserialization
-        this.executor = Executors.newFixedThreadPool(processorCount);
-        this.semaphore = new Semaphore(0);
-    }
 
     public void selection() {
         System.out.print("Selection phase");
@@ -69,33 +61,44 @@ public class GeneticAlgorithm implements Serializable {
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
 
-    public void crossover() {
-        Graph parent1;
-        Graph parent2;
-        ArrayList<Graph> children = new ArrayList<>();
-        System.out.print("Cross-over phase");
+    @Override
+    public void crossoverOnePoint() {
+        System.out.print("ONE-Cross-over phase");
         long now = System.currentTimeMillis();
+        int size = population.size();
+        int limit = size - (size % 2);  // Ensuring we only process pairs
 
-        for (int i = 0; i < population.size(); i += 2) {
-            parent1 = population.get(i);
-            parent2 = population.get(i + 1);
+        List<Graph> children = IntStream.range(0, limit)
+                .boxed() // box int primitives to Integer objects
+                .parallel()
+                .filter(i -> i % 2 == 0)
+                .flatMap(i -> {
+                    Graph parent1 = population.get(i);
+                    Graph parent2 = population.get(i + 1);
 
-            parent1.getNodes().sort(Comparator.comparingInt(Node::getId));
-            parent2.getNodes().sort(Comparator.comparingInt(Node::getId));
+                    int separator = random.nextInt(parent1.getNodes().size());
 
-            int separator = random.nextInt(parent2.getNodes().size()); //so we always have a bound
-            ArrayList<Node> firstChildNodes = new ArrayList<>(parent2.getNodes().subList(0, separator + 1));
-            firstChildNodes.addAll(parent1.getNodes().subList(separator + 1, parent1.getNodes().size()));
+                    ArrayList<Node> firstChildNodes = new ArrayList<>(parent2.getNodes().subList(0, separator + 1));
+                    firstChildNodes.addAll(parent1.getNodes().subList(separator + 1, parent1.getNodes().size()));
 
-            ArrayList<Node> secondChildNodes = new ArrayList<>(parent1.getNodes().subList(0, separator + 1));
-            secondChildNodes.addAll(parent2.getNodes().subList(separator + 1, parent2.getNodes().size()));
+                    ArrayList<Node> secondChildNodes = new ArrayList<>(parent1.getNodes().subList(0, separator + 1));
+                    secondChildNodes.addAll(parent2.getNodes().subList(separator + 1, parent2.getNodes().size()));
 
-            children.add(new Graph(firstChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
-            children.add(new Graph(secondChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW()));
+                    Graph child1 = new Graph(firstChildNodes, parent1.getEdges(), parent1.getH(), parent1.getW());
+                    Graph child2 = new Graph(secondChildNodes, parent2.getEdges(), parent2.getH(), parent2.getW());
+
+                    return Arrays.stream(new Graph[]{child1, child2});
+                })
+                .collect(Collectors.toList());
+
+        // If population size was odd
+        if (size % 2 != 0) {
+            children.add(population.get(size - 1));
         }
         population.addAll(children);
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
+
 
     public void mutation(double mutationRate) {
         System.out.print("Mutation phase");
@@ -134,6 +137,29 @@ public class GeneticAlgorithm implements Serializable {
         }
     }
 
+    @Override
+    public void mutationSwap() {
+        System.out.print("Mutation (Swap) phase");
+        long now = System.currentTimeMillis();
+        for (Graph g : this.population) {
+            if (new Random().nextDouble() <= MUTATION_PROBABILITY) {
+                Node node1 = g.getRandomNode();
+                Node node2 = g.getRandomNode(); // Ensure node2 is not node1
+                while (node2 == node1) {
+                    node2 = g.getRandomNode();
+                }
+                double tempX = node1.getX();
+                double tempY = node1.getY();
+                node1.setX(node2.getX());
+                node1.setY(node2.getY());
+                node2.setX(tempX);
+                node2.setY(tempY);
+            }
+        }
+        System.out.println(" completed in: " + (System.currentTimeMillis() - now));
+
+    }
+
     public void compute() {
         long startTime = System.currentTimeMillis();
         //calculateFitness();
@@ -143,7 +169,7 @@ public class GeneticAlgorithm implements Serializable {
             calculateFitness();
             generationSnapshots.add(getBestGraph(population));
             selection();
-            crossover();
+            crossoverOnePoint();
             mutation(MUTATION_PROBABILITY);
             System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
             iterations--;
@@ -157,7 +183,7 @@ public class GeneticAlgorithm implements Serializable {
     }
 
     public void animateGenerations() {
-        Timer timer = new Timer(1000, null);
+        Timer timer = new Timer(100, null);
         //final int[] index = {0}; //
         AtomicInteger index = new AtomicInteger(0);
         JFrame frame = new JFrame("Graph Display");
@@ -184,7 +210,7 @@ public class GeneticAlgorithm implements Serializable {
 
     public Graph getBestGraph(ArrayList<Graph> population) {
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
-        return population.get(populationSize - 1);
+        return population.getLast();
     }
 
     public void shutdownAndAwaitTermination(ExecutorService executor) {
@@ -226,11 +252,13 @@ public class GeneticAlgorithm implements Serializable {
         return subPopulation;
     }
 
-
     public Graph getInitialGraph() {
         return initialGraph;
     }
+
     public ExecutorService getExecutor() {
         return executor;
     }
+
+
 }

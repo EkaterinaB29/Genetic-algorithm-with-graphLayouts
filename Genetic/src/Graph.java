@@ -200,5 +200,6 @@ class Graph extends JPanel implements Serializable {
         });
         return this;
     }
+
 }
 
