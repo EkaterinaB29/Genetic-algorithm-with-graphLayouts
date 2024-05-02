@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GeneticAlgorithm implements Serializable {
     //population parameters
@@ -41,7 +45,8 @@ public class GeneticAlgorithm implements Serializable {
 
     // function to create the population of graphs according to the first one
     private void initialGraphPopulation(Graph initialGraph) {
-        for (int i = 0; i < populationSize; i++) {
+        this.population.add(initialGraph);
+        for (int i = 0; i < populationSize-1; i++) {
             this.population.add(new Graph(initialGraph.nodes, initialGraph.edges, initialGraph.getH(), initialGraph.getW()));
         }
     }
@@ -131,15 +136,15 @@ public class GeneticAlgorithm implements Serializable {
 
     public void compute() {
         long startTime = System.currentTimeMillis();
-        calculateFitness();
+        //calculateFitness();
         generationSnapshots.add(initialGraph);
         System.out.println("initial graph fitness: " + initialGraph.getFitnessScore());
         while (iterations != 0) {
+            calculateFitness();
+            generationSnapshots.add(getBestGraph(population));
             selection();
             crossover();
             mutation(MUTATION_PROBABILITY);
-            calculateFitness();
-            generationSnapshots.add(getBestGraph(population));
             System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
             iterations--;
             generation++;
@@ -153,14 +158,15 @@ public class GeneticAlgorithm implements Serializable {
 
     public void animateGenerations() {
         Timer timer = new Timer(1000, null);
-        final int[] index = {0}; //AtomicInteger index = new AtomicInteger(0);
+        //final int[] index = {0}; //
+        AtomicInteger index = new AtomicInteger(0);
         JFrame frame = new JFrame("Graph Display");
         frame.add(renderer);
         timer.addActionListener(e -> {
-            if (index[0] < generationSnapshots.size()) {
-                showBestGraph(generationSnapshots.get(index[0])); //index.get()
-                index[0]++;
-                //index.incrementAndGet();
+            if (index.get() < generationSnapshots.size()) {
+                showBestGraph(generationSnapshots.get(index.get())); //index.get()
+                //index[0]++;
+                index.incrementAndGet();
             } else {
                 ((Timer) e.getSource()).stop(); // Stop the timer
             }
@@ -172,12 +178,13 @@ public class GeneticAlgorithm implements Serializable {
     }
 
     public void showBestGraph(Graph bestGraph) {
-        SwingUtilities.invokeLater(() -> renderer.setGraph(bestGraph));
+        SwingUtilities.invokeLater(() ->
+                renderer.setGraph(bestGraph));
     }
 
     public Graph getBestGraph(ArrayList<Graph> population) {
         population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
-        return population.getLast();
+        return population.get(populationSize - 1);
     }
 
     public void shutdownAndAwaitTermination(ExecutorService executor) {

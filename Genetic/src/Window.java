@@ -14,7 +14,7 @@ public class Window extends JFrame implements ActionListener {
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
     public Mode mode;
-    private final int p = 100;
+    private final int p = 10000;
 
 
     public Window() {
