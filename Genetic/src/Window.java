@@ -5,7 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 
@@ -79,19 +80,30 @@ public class Window extends JFrame implements ActionListener {
             int windowHeight = Integer.parseInt(heightField.getText());
             int windowWidth = Integer.parseInt(widthField.getText());
             Random random = new Random();
-            HashSet<Edge> uniqueEdges = new HashSet<>();
-
+            /*HashSet<Edge> uniqueEdges = new HashSet<>();
             for (int i = 0; i < numEdges; i++) {
                 int origin = random.nextInt(numNodes);
                 int destination = random.nextInt(numNodes);
                 while (destination == origin || uniqueEdges.contains(new Edge(origin, destination))) {
                     //TODO PROBLEM IF COMPLETE GRAPH
+                    if (uniqueEdges.size() == (numNodes * (numNodes - 1)) / 2) {
+                        break;
+                    }
                     destination = random.nextInt(numNodes);
                 }
                 uniqueEdges.add(new Edge(origin, destination));
-            }
+            }*/
+            ArrayList<Edge> allPossibleEdges = new ArrayList<>();
 
-            ArrayList<Edge> edges = new ArrayList<>(uniqueEdges);
+            for (int i = 0; i < numNodes; i++) {
+                for (int j = i + 1; j < numNodes; j++) {
+                    allPossibleEdges.add(new Edge(i, j));
+                }
+            }
+            Collections.shuffle(allPossibleEdges);
+            List<Edge> selectedEdges = allPossibleEdges.subList(0, Math.min(numEdges, allPossibleEdges.size()));
+
+            ArrayList<Edge> edges = new ArrayList<>(selectedEdges);
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
             GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, processors);
@@ -113,6 +125,7 @@ public class Window extends JFrame implements ActionListener {
     }
 
     private void executeDistributiveComputation(String filePath) {
+        // or with ExecutiveService
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
@@ -135,25 +148,9 @@ public class Window extends JFrame implements ActionListener {
                 }
                 return null;
             }
-            /*
-            @Override
-            protected void done() {
-                try {
-                    get(); // call get to rethrow exceptions from doInBackground
-                    // Update GUI with results here or open new GUI window with results
-                    showResults();
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Failed to execute distributive computation.");
-                }
-            }*/
         };
         worker.execute(); // This will run the SwingWorker
     }
-
-    /*private void showResults() {
-        // Code to update GUI or show a new dialog with the results
-    }*/
 
     public String serializeData(GeneticAlgorithm geneticAlgorithm) throws IOException {
         String currentDir = System.getProperty("user.dir");

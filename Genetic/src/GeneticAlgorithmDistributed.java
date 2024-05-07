@@ -19,7 +19,7 @@ public class GeneticAlgorithmDistributed {
                 master.collectAndMergeResults();
                 master.chooseBest();
                 master.geneticOperations();
-                System.out.println("End of iteration " + currentIteration + ". Best fitness: " + geneticAlgorithm.getBestGraph(geneticAlgorithm.population).getFitnessScore());
+                System.out.println("End of iteration " + currentIteration );
                 MPI.COMM_WORLD.Barrier();
             }
             master.finalizeProcessing();

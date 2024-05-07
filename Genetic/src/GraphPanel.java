@@ -43,7 +43,7 @@ class GraphPanel extends JPanel {
             int y2 = (int) (end.getY() * scaleY + offsetY);
 
             QuadCurve2D.Float curve = new QuadCurve2D.Float(x1, y1, (x1 + x2) / 2, ((y1 + y2) / 2) - 60, x2, y2);
-            g2d.setStroke(new BasicStroke(2)); // Thicker line for better visibility
+            g2d.setStroke(new BasicStroke(1));
             g2d.setPaint(new GradientPaint(x1, y1, new Color(0xFFDC5896, true), x2, y2, new Color(0xDAD82277, true), true));
             g2d.draw(curve);
         }
