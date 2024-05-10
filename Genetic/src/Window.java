@@ -106,15 +106,13 @@ public class Window extends JFrame implements ActionListener {
             ArrayList<Edge> edges = new ArrayList<>(selectedEdges);
             Graph initialGraph = new Graph(numNodes, edges, windowWidth, windowHeight);
             int processors = sequentialButton.isSelected() ? 1 : Runtime.getRuntime().availableProcessors();
-            GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, processors);
-            if (sequentialButton.isSelected()) {
-                computation.compute();
-            } else if (parallelButton.isSelected()) {
-                computation.compute();
-            } else {
-                String filePath = serializeData(computation);
-                executeDistributiveComputation(filePath);
 
+            if (distributiveButton.isSelected()) {
+                executeDistributiveComputation(initialGraph, p, processors);
+            }
+            else{
+                GeneticAlgorithm computation = new GeneticAlgorithm(initialGraph, p, processors);
+                computation.compute();
             }
 
         } catch (NumberFormatException ex) {
@@ -124,13 +122,15 @@ public class Window extends JFrame implements ActionListener {
         }
     }
 
-    private void executeDistributiveComputation(String filePath) {
-        // or with ExecutiveService
+    private void executeDistributiveComputation(Graph initialGraph, int populationSize, int numProcessors) throws IOException {
+
+        String graphFilePath = serializeGraphToFile(initialGraph);
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
                 String scriptPath = "/home/ekaterina/Desktop/Genetic/mpjrun.sh";
-                String[] command = {scriptPath, filePath};
+                // Pass the number of processors and population size as command-line arguments
+                String[] command = {scriptPath, graphFilePath, String.valueOf(populationSize), String.valueOf(numProcessors)};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
@@ -152,16 +152,14 @@ public class Window extends JFrame implements ActionListener {
         worker.execute(); // This will run the SwingWorker
     }
 
-    public String serializeData(GeneticAlgorithm geneticAlgorithm) throws IOException {
+    private String serializeGraphToFile(Graph graph) throws IOException {
         String currentDir = System.getProperty("user.dir");
-        File newFile = new File(currentDir, "object.ser");
-        //serialize the GeneticAlgorithm object
-        try (FileOutputStream fileOut = new FileOutputStream(newFile); ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
-            out.writeObject(geneticAlgorithm);
+        File file = new File(currentDir, "graph.ser");
+        try (FileOutputStream fileOut = new FileOutputStream(file);
+             ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
+            out.writeObject(graph);
         }
-        // Delete
-        //newFile.deleteOnExit();
-        return newFile.getAbsolutePath();
+        return file.getAbsolutePath();
     }
 
 }

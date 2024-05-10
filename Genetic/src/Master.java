@@ -1,4 +1,5 @@
-import mpi.*;
+import mpi.MPI;
+import mpi.MPIException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,56 +11,53 @@ public class Master {
         this.geneticAlgorithm = geneticAlgorithm;
     }
 
-    public void distributeWork() throws IOException, MPIException {
-        int size = MPI.COMM_WORLD.Size();
-        //System.out.println("Size: " + size);
+    public void distributeWork() throws IOException, MPIException, ClassNotFoundException {
         int populationSize = geneticAlgorithm.populationSize;
-        //System.out.println("Population size: " + populationSize);
+        int size = MPI.COMM_WORLD.Size();
         int chunkSize = populationSize / size;
-        //System.out.println("Chunk size: " + chunkSize);
-        int remaining = populationSize % size;
-        //System.out.println("Remaining: " + remaining);
-        /*
-        System.out.println("Distributing work...");
-        System.out.println("Total population size: " + populationSize);
-        System.out.println("Each process receives a base chunk size: " + chunkSize);
-        System.out.println("Remaining population: " + remaining);
-        */
 
-        for (int i = 1; i < size; i++) {
-            int startIndex = i * chunkSize + Math.min(i, remaining);
-            int endIndex = startIndex + chunkSize + (i < remaining ? 1 : 0);
+        byte[][] populations = new byte[size][]; // Array to hold serialized subpopulations for each process
+        // Scatter operation
+
+        // Scatter operation
+        int[] displs = new int[size];
+        int[] sendCounts = new int[size];
+        for (int i = 0; i < size; i++) {
+            int startIndex = i * chunkSize;
+            int endIndex = (i < size - 1) ? startIndex + chunkSize : populationSize;
             ArrayList<Graph> subPopulation = new ArrayList<>(geneticAlgorithm.population.subList(startIndex, endIndex));
             byte[] serializedSubPopulation = GeneticAlgorithm.serializeSubPopulation(subPopulation);
-            /*
-            System.out.println("Sending to process " + i + ": start index = " + startIndex + ", end index = " + endIndex);
-            System.out.println("Sub-population size for process " + i + ": " + subPopulation.size());
-            System.out.println("Serialized sub-population length (bytes) for process " + i + ": " + serializedSubPopulation.length);
-            */
-            MPI.COMM_WORLD.Send(serializedSubPopulation, 0, serializedSubPopulation.length, MPI.BYTE, i, 0);
+            populations[i] = serializedSubPopulation;
+            sendCounts[i] = serializedSubPopulation.length; // Size of data to be sent to each process
+            displs[i] = i * serializedSubPopulation.length; // Calculate displacement for each process
         }
-        geneticAlgorithm.population = new ArrayList<>(geneticAlgorithm.population.subList(0, chunkSize + (remaining > 0 ? 1 : 0)));
+        byte[] localPopulation = new byte[populations[0].length];
+
+        MPI.COMM_WORLD.Scatterv(populations, 0, sendCounts, displs, MPI.OBJECT, localPopulation, 0, geneticAlgorithm.populationSize, MPI.OBJECT, 0);
+
+
+
+        geneticAlgorithm.population = GeneticAlgorithm.deserializeSubPopulation(localPopulation);
         geneticAlgorithm.populationSize = geneticAlgorithm.population.size();
         geneticAlgorithm.calculateFitness();
     }
 
     public void collectAndMergeResults() throws MPIException, IOException, ClassNotFoundException {
         int size = MPI.COMM_WORLD.Size();
-        ArrayList<Graph> masterPopulation = new ArrayList<>(geneticAlgorithm.population);
+        byte[][] receivedPopulations = new byte[size][]; // Buffer to collect all subpopulations
+        byte[] serializedPopulation = GeneticAlgorithm.serializeSubPopulation(geneticAlgorithm.population);
+
+        // Gather operation
+        MPI.COMM_WORLD.Gatherv(serializedPopulation, 0, serializedPopulation.length, MPI.BYTE, receivedPopulations, 0, new int[]{receivedPopulations[0].length, receivedPopulations[1].length,receivedPopulations[2].length,receivedPopulations[3].length}, null,  MPI.BYTE, 0);
+
         geneticAlgorithm.population.clear();
         geneticAlgorithm.populationSize = 0;
 
-        for (int i = 1; i < size; i++) {
-            Status status = MPI.COMM_WORLD.Probe(i, MPI.ANY_TAG);
-            int messageSize = status.Get_count(MPI.BYTE);
-            byte[] buffer = new byte[messageSize];
-            MPI.COMM_WORLD.Recv(buffer, 0, messageSize, MPI.BYTE, i, MPI.ANY_TAG);
-            ArrayList<Graph> subPopulation = GeneticAlgorithm.deserializeSubPopulation(buffer);
+        for (byte[] populationData : receivedPopulations) {
+            ArrayList<Graph> subPopulation = GeneticAlgorithm.deserializeSubPopulation(populationData);
             geneticAlgorithm.population.addAll(subPopulation);
         }
-        geneticAlgorithm.population.addAll(masterPopulation);
         geneticAlgorithm.populationSize = geneticAlgorithm.population.size();
-
     }
 
     public void geneticOperations() throws MPIException, IOException, ClassNotFoundException {
@@ -75,4 +73,5 @@ public class Master {
     public void finalizeProcessing() {
         geneticAlgorithm.animateGenerations();
     }
+
 }

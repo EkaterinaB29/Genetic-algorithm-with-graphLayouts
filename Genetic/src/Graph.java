@@ -129,11 +129,6 @@ class Graph extends JPanel implements Serializable {
         double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
 
-        /***  ASK HERE, DO I NEED TO HANDLE IT THIS WAY OR IF i PUT 1 IT WILL BE FINE?
-        if (edgeLenDev == Double.POSITIVE_INFINITY || edgeCross == Double.POSITIVE_INFINITY) {
-            this.fitnessScore = 1; // or some penalty value
-            return;
-        }**/
 
         double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * Math.min(minNodeDist * minNodeDist, Double.MAX_VALUE)) - edgeCross;
         double diff = Math.max(0, calculatedDiff);
