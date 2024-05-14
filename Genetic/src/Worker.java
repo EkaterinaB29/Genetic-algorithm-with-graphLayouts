@@ -22,8 +22,6 @@ public class Worker {
         geneticAlgorithm.population = receivedPopulation;
         geneticAlgorithm.populationSize = receivedPopulation.size();
         geneticAlgorithm.calculateFitness();
-
-        //TODO ASK IF WORKERS NEEDS TO DO GENETIC OPERATIONS AS WELL
         geneticAlgorithm.selection();
         geneticAlgorithm.crossoverOnePoint();
         geneticAlgorithm.mutation(GeneticAlgorithm.MUTATION_PROBABILITY);

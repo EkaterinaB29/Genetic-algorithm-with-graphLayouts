@@ -7,7 +7,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 
 public class Window extends JFrame implements ActionListener {
@@ -79,20 +78,7 @@ public class Window extends JFrame implements ActionListener {
             int numEdges = Integer.parseInt(edgesField.getText());
             int windowHeight = Integer.parseInt(heightField.getText());
             int windowWidth = Integer.parseInt(widthField.getText());
-            Random random = new Random();
-            /*HashSet<Edge> uniqueEdges = new HashSet<>();
-            for (int i = 0; i < numEdges; i++) {
-                int origin = random.nextInt(numNodes);
-                int destination = random.nextInt(numNodes);
-                while (destination == origin || uniqueEdges.contains(new Edge(origin, destination))) {
-                    //TODO PROBLEM IF COMPLETE GRAPH
-                    if (uniqueEdges.size() == (numNodes * (numNodes - 1)) / 2) {
-                        break;
-                    }
-                    destination = random.nextInt(numNodes);
-                }
-                uniqueEdges.add(new Edge(origin, destination));
-            }*/
+
             ArrayList<Edge> allPossibleEdges = new ArrayList<>();
 
             for (int i = 0; i < numNodes; i++) {
@@ -112,8 +98,8 @@ public class Window extends JFrame implements ActionListener {
             } else if (parallelButton.isSelected()) {
                 computation.compute();
             } else {
-                String filePath = serializeData(computation);
-                executeDistributiveComputation(filePath);
+                String filePath = serializeData(initialGraph);
+                executeDistributiveComputation(filePath,p,processors);
 
             }
 
@@ -124,13 +110,13 @@ public class Window extends JFrame implements ActionListener {
         }
     }
 
-    private void executeDistributiveComputation(String filePath) {
+    private void executeDistributiveComputation(String filePath, int populationSize, int processors) {
         // or with ExecutiveService
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
                 String scriptPath = "/home/ekaterina/Desktop/Genetic/mpjrun.sh";
-                String[] command = {scriptPath, filePath};
+                String[] command = {scriptPath, filePath, String.valueOf(populationSize), String.valueOf(processors)};
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 Process process = processBuilder.start();
@@ -152,12 +138,11 @@ public class Window extends JFrame implements ActionListener {
         worker.execute(); // This will run the SwingWorker
     }
 
-    public String serializeData(GeneticAlgorithm geneticAlgorithm) throws IOException {
+    public String serializeData(Graph initialGraph) throws IOException {
         String currentDir = System.getProperty("user.dir");
-        File newFile = new File(currentDir, "object.ser");
-        //serialize the GeneticAlgorithm object
+        File newFile = new File(currentDir, "graph.ser");
         try (FileOutputStream fileOut = new FileOutputStream(newFile); ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
-            out.writeObject(geneticAlgorithm);
+            out.writeObject(initialGraph);
         }
         // Delete
         //newFile.deleteOnExit();

@@ -15,7 +15,6 @@ class Graph extends JPanel implements Serializable {
     public int w;
     static Random random = new Random();
 
-    // constructor
     public Graph(int n, ArrayList<Edge> edges, int h, int w) {
 
         this.nodes = new ArrayList<>();
@@ -29,8 +28,6 @@ class Graph extends JPanel implements Serializable {
 
     }
 
-    //another constructor so it will know which one to use
-    //used in the generation of the new population
     public Graph(ArrayList<Node> originalnodes, ArrayList<Edge> edges, int h, int w) {
         this.nodes = new ArrayList<>();
         for (Node node : originalnodes) {
@@ -128,13 +125,6 @@ class Graph extends JPanel implements Serializable {
 
         double edgeLenDev = edgeLengthDeviation();
         double edgeCross = edgeCrossings();
-
-        /***  ASK HERE, DO I NEED TO HANDLE IT THIS WAY OR IF i PUT 1 IT WILL BE FINE?
-        if (edgeLenDev == Double.POSITIVE_INFINITY || edgeCross == Double.POSITIVE_INFINITY) {
-            this.fitnessScore = 1; // or some penalty value
-            return;
-        }**/
-
         double calculatedDiff = (edgeLenDev / minNodeDist) - (0.25 * Math.min(minNodeDist * minNodeDist, Double.MAX_VALUE)) - edgeCross;
         double diff = Math.max(0, calculatedDiff);
         this.fitnessScore = 1 + Math.abs(4 * minNodeDist - 2 * edgeLenDev - 5.0 * diff);
@@ -164,26 +154,7 @@ class Graph extends JPanel implements Serializable {
         }
         return edgeCross;
     }
-    //mutation on a single Node TODO RESTRUCTURE!
 
-    /***
-     public Graph mutationNew() {
-     Node randomNode = this.getRandomNode();
-     for ( int i=0 ; i < edges.size(); i++) {
-     double angle=random.nextDouble(180);
-     if( this.edges.get(i).origin == randomNode || randomNode == this.edges.get(i).destination)
-     {
-     //get the pair [random_node, some other_node]
-     double radius = Node.euclideanDistance(this.edges.get(i).origin,this.edges.get(i).destination);
-     double newX = (radius * Math.cos( angle * Math.PI / 180)) + (randomNode.x);
-     double newY = (radius * Math.sin(angle* Math.PI / 180)) + (randomNode.y);
-     Node.moveNode(randomNode, newX,newY);
-     }
-     }
-     this.fitnessScore = fitnessEvaluation();
-     return this;
-     }
-     ***/
     public Graph mutation() {
         Node randomNode = this.getRandomNode();
         double angle = random.nextDouble() * 180; //random angle

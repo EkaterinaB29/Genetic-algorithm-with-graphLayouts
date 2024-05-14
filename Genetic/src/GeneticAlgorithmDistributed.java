@@ -9,7 +9,10 @@ public class GeneticAlgorithmDistributed {
         int myRank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
 
-        GeneticAlgorithm geneticAlgorithm = deserializeData(args[args.length - 1]);
+        Graph graph = deserializeData(args[args.length - 3]);
+        int populationSize = Integer.parseInt(args[args.length - 2]);
+        int processors = Integer.parseInt(args[args.length - 1]);
+        GeneticAlgorithm geneticAlgorithm = new GeneticAlgorithm(graph, populationSize, processors);
 
         if (myRank == 0) {
             Master master = new Master(geneticAlgorithm);
@@ -34,9 +37,9 @@ public class GeneticAlgorithmDistributed {
         MPI.Finalize();
     }
 
-    public static GeneticAlgorithm deserializeData(String filePath) throws IOException, ClassNotFoundException {
+    public static Graph deserializeData(String filePath) throws IOException, ClassNotFoundException {
         try (FileInputStream fileIn = new FileInputStream(filePath); ObjectInputStream in = new ObjectInputStream(fileIn)) {
-            return (GeneticAlgorithm) in.readObject();
+            return (Graph) in.readObject();
         }
     }
 }
