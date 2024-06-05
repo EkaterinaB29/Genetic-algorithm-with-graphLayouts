@@ -8,5 +8,5 @@ public interface GeneticOperations {
 
     void calculateFitness();
 
-    void mutationSwap();
+
 }

@@ -10,12 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class GeneticAlgorithm implements Serializable, GeneticOperations {
+public class GeneticAlgorithm implements Serializable,GeneticOperations{
     //population parameters
     ArrayList<Graph> population = new ArrayList<>();
     private Graph initialGraph;
     public int populationSize;
-    int iterations = 10;
+    int iterations = 100;
     int generation = 0;
 
     //synchronization tools & other parameters
@@ -49,7 +49,7 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
         }
     }
 
-
+    @Override
     public void selection() {
         System.out.print("Selection phase");
         long now = System.currentTimeMillis();
@@ -99,19 +99,19 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
 
-
+    @Override
     public void mutation(double mutationRate) {
         System.out.print("Mutation phase");
         long now = System.currentTimeMillis();
         for (Graph g : this.population) {
             double randomValue = new Random().nextDouble();
             if (randomValue <= mutationRate) {
-                g.mutation();
+                g.circularMutation(); // change here if another mutation method is used
             }
         }
         System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
-
+    @Override
     public void calculateFitness() {
         System.out.print("Calculating fitness");
         long now = System.currentTimeMillis();
@@ -121,7 +121,7 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
             executor.submit(() -> {
                 try {
                     graph.fitnessEvaluation();// Perform fitness evaluation
-                    System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
+                    //System.out.println("Evaluated graph with fitness: " + graph.getFitnessScore());
                 } catch (Exception e) {
                     //System.err.println("Error during fitness evaluation: " + e.getMessage());
                 } finally {
@@ -137,28 +137,7 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
         }
     }
 
-    @Override
-    public void mutationSwap() {
-        System.out.print("Mutation (Swap) phase");
-        long now = System.currentTimeMillis();
-        for (Graph g : this.population) {
-            if (new Random().nextDouble() <= MUTATION_PROBABILITY) {
-                Node node1 = g.getRandomNode();
-                Node node2 = g.getRandomNode(); // Ensure node2 is not node1
-                while (node2 == node1) {
-                    node2 = g.getRandomNode();
-                }
-                double tempX = node1.getX();
-                double tempY = node1.getY();
-                node1.setX(node2.getX());
-                node1.setY(node2.getY());
-                node2.setX(tempX);
-                node2.setY(tempY);
-            }
-        }
-        System.out.println(" completed in: " + (System.currentTimeMillis() - now));
 
-    }
 
     public void compute() {
         long startTime = System.currentTimeMillis();
@@ -168,10 +147,11 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
         while (iterations != 0) {
             calculateFitness();
             generationSnapshots.add(getBestGraph(population));
+            System.out.println("Generation "+generation+" best:" + getBestGraph(this.population).getFitnessScore());
             selection();
             crossoverOnePoint();
             mutation(MUTATION_PROBABILITY);
-            System.out.println("Generation best: " + getBestGraph(this.population).getFitnessScore());
+
             iterations--;
             generation++;
         }
@@ -252,13 +232,6 @@ public class GeneticAlgorithm implements Serializable, GeneticOperations {
         return subPopulation;
     }
 
-    public Graph getInitialGraph() {
-        return initialGraph;
-    }
-
-    public ExecutorService getExecutor() {
-        return executor;
-    }
 
 
 }

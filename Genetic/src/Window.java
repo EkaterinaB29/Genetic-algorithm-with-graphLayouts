@@ -13,8 +13,8 @@ public class Window extends JFrame implements ActionListener {
     private JTextField widthField, heightField, verticesField, edgesField;
     private JRadioButton sequentialButton, parallelButton, distributiveButton;
     private JButton runButton;
-    public Mode mode;
-    private final int p = 10000;
+
+    private final int p = 1000;
 
 
     public Window() {
@@ -111,7 +111,7 @@ public class Window extends JFrame implements ActionListener {
     }
 
     private void executeDistributiveComputation(String filePath, int populationSize, int processors) {
-        // or with ExecutiveService
+        // or with ExecutorService
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {

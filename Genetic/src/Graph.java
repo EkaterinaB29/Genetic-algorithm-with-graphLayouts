@@ -1,7 +1,7 @@
-import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.stream.Collectors;
 
 class Graph {
 
@@ -130,8 +130,8 @@ class Graph {
         double w1 = 2.0; // Weight for Minimum Distance Neighbour Sum
         double w2 = 2.0; // Weight for Edge Length Deviation
         double w3 = 1.0; // Weight for Edge Crossings
-
-
+        double w4 = 2.5; // Weight for edge length deviation and minimum distance neighbour sum
+        double w5 = 0.5; // Weight for node spread
         // Add small epsilon values to avoid division by zero
         double epsilon = 1e-10;
 
@@ -145,15 +145,16 @@ class Graph {
         double weightedMinNodeDistSum = w1 * minNodeDistSum;
         double weightedEdgeLenDev = w2 * edgeLenDev;
         double weightedEdgeCross = w3 * edgeCross;
-        //double weightedNodeOverlapPenalty = w4 * nodeOverlapPenalty;
+        double weightedEdgeLenDevPenalty = w4 * (edgeLenDev / (minNodeDistSum + epsilon));
+        double weightedNodeSpread = w5 * numNodes * Math.min(minNodeDistSum * minNodeDistSum, Double.MAX_VALUE);
 
         // Calculate the fitness score
         double calculatedDiff = weightedMinNodeDistSum + weightedEdgeLenDev -
-                2.5 * (edgeLenDev / (minNodeDistSum + epsilon)) -
-                (0.25 * numNodes * Math.min(minNodeDistSum * minNodeDistSum, Double.MAX_VALUE)) +
+                weightedEdgeLenDevPenalty -
+                weightedNodeSpread +
                 weightedEdgeCross;
 
-        this.fitnessScore = 1 + calculatedDiff;
+        this.fitnessScore = 1 + Math.abs(calculatedDiff);
     }
 
 
@@ -194,7 +195,7 @@ class Graph {
         return edgeCross;
     }
 
-    public Graph mutation() {
+    public void circularMutation() {
         Node randomNode = this.getRandomNode();
         double angle = random.nextDouble() * 360; // Use the full circle for angle
         double radians = Math.toRadians(angle);
@@ -216,7 +217,47 @@ class Graph {
                 origin.setY(Math.max(0, Math.min(h - 1, newY)));
             }
         }
-        return this;
+    }
+
+    public void twoEdgeMutation() {
+        Node randomNode = getRandomNode();
+        List<Edge> incidentEdges = edges.stream()
+                .filter(edge -> edge.getOrigin(nodes) == randomNode || edge.getDestination(nodes) == randomNode)
+                .collect(Collectors.toList());
+
+        if (incidentEdges.size() < 2) {
+            return; // Not enough edges to mutate
+        }
+
+        Edge edge1 = incidentEdges.get(0);
+        Edge edge2 = incidentEdges.get(1);
+
+        mutateEdge(edge1, randomNode);
+        mutateEdge(edge2, randomNode);
+
+    }
+
+    private void mutateEdge(Edge edge, Node randomNode) {
+        Node origin = edge.getOrigin(nodes);
+        Node destination = edge.getDestination(nodes);
+
+        double length = Node.euclideanDistance(origin, destination);
+        // Calculates the (length)
+
+        double angle = Math.atan2(destination.getY() - origin.getY(), destination.getX() - origin.getX());
+        // Calculates the angle of the edge using the arctangent of the differences in y and x coordinates.
+
+        double newX = random.nextDouble() * w;
+        double newY = random.nextDouble() * h;
+        // Generates new random x and y coordinates within the graph's width and height.
+
+        randomNode.setX(newX);
+        randomNode.setY(newY);
+        // Sets the random node's coordinates to the new random coordinates.
+
+        destination.setX(newX + length * Math.cos(angle));
+        destination.setY(newY + length * Math.sin(angle));
+        // Sets the destination node's coordinates to maintain the edge's original length and angle.
     }
 
 }
