@@ -1,4 +1,4 @@
-# Distributed Genetic Algorithm
+# Genetic Algorithm
 
 ## Description
 This Java-based project implements a genetic algorithm designed to solve optimization problems efficiently. It supports three modes of execution: sequential, parallel, and distributive, allowing users to choose the best approach based on their computational resources and requirements.
