@@ -20,12 +20,13 @@ public class GeneticAlgorithm implements Serializable,GeneticOperations{
 
     //synchronization tools & other parameters
     static Random random = new Random();
-    static final double MUTATION_PROBABILITY = 0.001;
+    static final double MUTATION_PROBABILITY = 0.1;
     int processorCount;
     transient private ExecutorService executor;
     transient private Semaphore semaphore;
     ArrayList<Graph> generationSnapshots = new ArrayList<>();
     GraphPanel renderer;
+    private volatile boolean running = true; // Flag to control the loop
 
     public GeneticAlgorithm(Graph initialGraph, int populationSize, int processorCount) {
         this.initialGraph = initialGraph;
@@ -100,16 +101,20 @@ public class GeneticAlgorithm implements Serializable,GeneticOperations{
     }
 
     @Override
-    public void mutation(double mutationRate) {
-        System.out.print("Mutation phase");
-        long now = System.currentTimeMillis();
+     public void mutation(double mutationRate) {
+        Random random = new Random();
         for (Graph g : this.population) {
-            double randomValue = new Random().nextDouble();
+            double randomValue = random.nextDouble();
             if (randomValue <= mutationRate) {
-                g.circularMutation(); // change here if another mutation method is used
+                // Perform a coin flip to decide which mutation to apply
+                double mutationChoice = random.nextDouble();
+                if (mutationChoice < 0.5) {
+                    g.circularMutation();
+                } else {
+                    g.mutationFlipCoordinates();
+                }
             }
         }
-        System.out.println(" completed in: " + (System.currentTimeMillis() - now));
     }
     @Override
     public void calculateFitness() {
@@ -231,6 +236,100 @@ public class GeneticAlgorithm implements Serializable,GeneticOperations{
         }
         return subPopulation;
     }
+
+    /*for testting */
+    /*public void compute() {
+        Graph initialGraph = this.population.get(0);
+        saveGraphToCSV(initialGraph, "bestGraphs", 0);
+        while (running) { // Check the flag
+            calculateFitness();
+            Graph bestGraph = getBestGraph(this.population);
+            saveGraphToCSV(bestGraph, "bestGraphs", generation);
+            saveBestGraphInfoToCSV(bestGraph, "bestGraphs/bestGraphInfo.csv"); // Store generation and fitness score
+            selection();
+            crossoverOnePoint();
+            mutation(MUTATION_PROBABILITY);
+            System.out.println("Generation " + generation + " best: " + bestGraph.getFitnessScore());
+            generation++;
+        }
+        // Ensure the executor is shut down after the loop
+        shutdownAndAwaitTermination();
+    }
+
+    public Graph getBestGraph(ArrayList<Graph> population) {
+        population.sort(Comparator.comparingDouble(Graph::getFitnessScore));
+        return population.getLast();
+    }*/
+
+    public void saveBestGraphInfoToCSV(Graph bestGraph, String filename) {
+        try (PrintWriter writer = new PrintWriter(new FileOutputStream(new File(filename), true))) {
+            StringBuilder sb = new StringBuilder();
+            String formattedFitness = String.format(Locale.US, "%.15f", bestGraph.getFitnessScore()); // Format the fitness score to 6 decimal places
+            sb.append(generation).append(',').append(formattedFitness).append('\n');
+            writer.write(sb.toString());
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void saveGraphToCSV(Graph graph, String generationFolder, int generation) {
+        File dir = new File(generationFolder);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        saveGraphNodesToCSVFile(graph, generationFolder + "/" + "generation_" + generation + "_nodes.csv");
+        saveGraphEdgesToCSVFile(graph, generationFolder + "/" + "generation_" + generation + "_edges.csv");
+    }
+
+    public void saveGraphNodesToCSVFile(Graph graph, String filename) {
+        try (PrintWriter writer = new PrintWriter(new File(filename))) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Id,Label,X,Y\n");  // Gephi-compatible headers
+
+            int nodeId = 0;
+            for (Node node : graph.getNodes()) {
+                sb.append(nodeId).append(',')
+                        .append("Node ").append(nodeId).append(',')
+                        .append(node.getX()).append(',')
+                        .append(node.getY()).append('\n');
+                nodeId++;
+            }
+
+            writer.write(sb.toString());
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void saveGraphEdgesToCSVFile(Graph graph, String filename) {
+        try (PrintWriter writer = new PrintWriter(new File(filename))) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Source,Target\n");  // Gephi-compatible headers
+
+            for (Edge edge : graph.getEdges()) {
+                sb.append(edge.origin).append(',')
+                        .append(edge.destination).append('\n');
+            }
+
+            writer.write(sb.toString());
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void shutdownAndAwaitTermination() {
+        executor.shutdown();
+        try {
+            // Wait for existing tasks to terminate
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS))
+                    System.err.println("Executor did not terminate.");
+            }
+        } catch (InterruptedException ie) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
 
 
 
