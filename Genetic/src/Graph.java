@@ -119,11 +119,48 @@ class Graph {
 
         return totalMinDistance == 0 ? 0.1 : totalMinDistance; // Avoid returning 0 to prevent division by zero in fitness calculation
     }
+     public ArrayList<Point> edgeCrossings() {
+        ArrayList<Point> crossingPoints = new ArrayList<>();
+        for (int i = 0; i < this.getEdges().size() - 1; ++i) {
+            Edge edge1 = this.getEdges().get(i);
+            for (int j = i + 1; j < this.getEdges().size(); ++j) {
+                Edge edge2 = this.getEdges().get(j);
+                if (edge1.intersects(edge2, this.nodes)) {
+                    Point crossingPoint = calculateIntersectionPoint(edge1, edge2);
+                    if (crossingPoint != null) {
+                        crossingPoints.add(crossingPoint);
+                    }
+                }
+            }
+        }
+        return crossingPoints;
+    }
+
+    private Point calculateIntersectionPoint(Edge edge1, Edge edge2) {
+        Node p1 = edge1.getOrigin(this.nodes);
+        Node p2 = edge1.getDestination(this.nodes);
+        Node p3 = edge2.getOrigin(this.nodes);
+        Node p4 = edge2.getDestination(this.nodes);
+
+        double d = (p1.getX() - p2.getX()) * (p3.getY() - p4.getY()) - (p1.getY() - p2.getY()) * (p3.getX() - p4.getX());
+        if (d == 0) return null;
+
+        double xi = ((p3.getX() - p4.getX()) * (p1.getX() * p2.getY() - p1.getY() * p2.getX()) - (p1.getX() - p2.getX()) * (p3.getX() * p4.getY() - p3.getY() * p4.getX())) / d;
+        double yi = ((p3.getY() - p4.getY()) * (p1.getX() * p2.getY() - p1.getY() * p2.getX()) - (p1.getY() - p2.getY()) * (p3.getX() * p4.getY() - p3.getY() * p4.getX())) / d;
+
+        return new Point(xi, yi);
+    }
+
+    private boolean hasSymmetricalCrossings(ArrayList<Point> crossingPoints) {
+        Set<Point> uniquePoints = new HashSet<>(crossingPoints);
+        return uniquePoints.size() < crossingPoints.size();
+    }
 
     protected void fitnessEvaluation() {
         double minNodeDistSum = minimumDistanceNeighbourSum();
         double edgeLenDev = edgeLengthDeviation();
-        double edgeCross = edgeCrossings();
+        ArrayList<Point> crossingPoints = this.edgeCrossings();
+        double edgeCross = crossingPoints.size();
 
 
         // Weights for each component
@@ -155,6 +192,10 @@ class Graph {
                 weightedEdgeCross;
 
         this.fitnessScore = 1 + Math.abs(calculatedDiff);
+        
+            if (hasSymmetricalCrossings(crossingPoints)) {
+                this.fitnessScore *= 1.5;
+            }
     }
 
 
@@ -176,7 +217,7 @@ class Graph {
     }
 
 
-    public double edgeCrossings() {
+    /*public double edgeCrossings() {
         double edgeCross = 0;
         int i = 0;
 
@@ -193,7 +234,7 @@ class Graph {
             i++;
         }
         return edgeCross;
-    }
+    }*/
 
     public void circularMutation() {
         Node randomNode = this.getRandomNode();
@@ -258,6 +299,39 @@ class Graph {
         destination.setX(newX + length * Math.cos(angle));
         destination.setY(newY + length * Math.sin(angle));
         // Sets the destination node's coordinates to maintain the edge's original length and angle.
+    }
+    
+    public Graph mutationFlipCoordinates() {
+        Node randomNode = this.getRandomNode();
+        double originalX = randomNode.getX();
+        double originalY = randomNode.getY();
+
+        double newX = -originalX;
+        double newY = -originalY;
+
+        randomNode.x = Math.max(0, Math.min(w - 1, newX));
+        randomNode.y = Math.max(0, Math.min(h - 1, newY));
+
+
+        Random random = new Random();
+        double transformChoice = random.nextDouble();
+
+        if (transformChoice < 0.33) {
+            //Flip x to -x, y remains the same
+            randomNode.x = -randomNode.x;
+        } else if (transformChoice < 0.66) {
+            // Flip y to -y, x remains the same
+            randomNode.y = -randomNode.y;
+        } else {
+            //Flip both x to -x and y to -y
+            randomNode.x = -randomNode.x;
+            randomNode.y = -randomNode.y;
+        }
+
+        randomNode.x = Math.max(0, Math.min(w - 1, randomNode.x));
+        randomNode.y = Math.max(0, Math.min(h - 1, randomNode.y));
+
+        return this;
     }
 
 }
